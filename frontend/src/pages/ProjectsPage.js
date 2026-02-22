@@ -610,15 +610,38 @@ export default function ProjectsPage() {
                     <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
                       <FolderOpen className="w-4 h-4 text-primary" />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                      onClick={(e) => { e.stopPropagation(); setDeletingProject(project); }}
-                      data-testid={`delete-project-${project.id}`}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    <div className="flex items-center gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                        title="Export as PDF"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const token = localStorage.getItem("archiva_token");
+                            const res = await fetch(`${BACKEND_URL}/api/projects/${project.id}/export-pdf`, {
+                              headers: { Authorization: `Bearer ${token}` }
+                            });
+                            if (!res.ok) throw new Error();
+                            const blob = await res.blob();
+                            window.open(URL.createObjectURL(blob), "_blank");
+                          } catch { toast.error("Failed to export PDF"); }
+                        }}
+                        data-testid={`export-pdf-card-${project.id}`}
+                      >
+                        <Download className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeletingProject(project); }}
+                        data-testid={`delete-project-${project.id}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                   <h3 className="font-semibold text-sm mb-0.5 truncate">{project.name}</h3>
                   {project.description && (
