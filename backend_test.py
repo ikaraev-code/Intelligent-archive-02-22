@@ -829,6 +829,163 @@ These technologies are revolutionizing how we interact with data and make decisi
         
         print("\n✅ Backend API Status:", "HEALTHY" if self.tests_passed >= 7 else "ISSUES FOUND")
 
+    def test_pdf_export_valid_project(self, project_id):
+        """Test PDF export for a valid project"""
+        print(f"\n📄 Testing PDF export for project {project_id[:8]}...")
+        
+        headers = {'Authorization': f'Bearer {self.token}'}
+        url = f"{self.base_url}/projects/{project_id}/export-pdf"
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            self.tests_run += 1
+            
+            if response.status_code == 200:
+                content = response.content
+                content_type = response.headers.get('content-type', '')
+                
+                # Check if it's a valid PDF
+                if content.startswith(b'%PDF-') and content_type == 'application/pdf':
+                    print(f"✅ Valid PDF returned - Size: {len(content)} bytes")
+                    
+                    # Check minimum size (should be > 1000 bytes for project with content)
+                    if len(content) > 1000:
+                        print(f"✅ PDF size is reasonable ({len(content)} bytes > 1000)")
+                        self.tests_passed += 1
+                        return True, content
+                    else:
+                        print(f"⚠️  PDF size is small ({len(content)} bytes), might be empty project")
+                        self.tests_passed += 1
+                        return True, content
+                else:
+                    print(f"❌ Invalid PDF: doesn't start with %PDF- or wrong content type")
+                    print(f"   Content-Type: {content_type}")
+                    print(f"   First 50 bytes: {content[:50]}")
+                    self.failed_tests.append({
+                        'name': f'PDF Export - Project {project_id[:8]}',
+                        'expected': 'Valid PDF',
+                        'actual': f'Invalid content: {content_type}',
+                        'error': 'Not a valid PDF file'
+                    })
+                    return False, None
+            else:
+                print(f"❌ Failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Error: {response.text}")
+                self.failed_tests.append({
+                    'name': f'PDF Export - Project {project_id[:8]}',
+                    'expected': '200',
+                    'actual': str(response.status_code),
+                    'error': response.text[:100]
+                })
+                return False, None
+                
+        except Exception as e:
+            print(f"❌ Exception occurred: {str(e)}")
+            self.tests_run += 1
+            self.failed_tests.append({
+                'name': f'PDF Export - Project {project_id[:8]}',
+                'expected': 'Success',
+                'actual': 'Exception',
+                'error': str(e)
+            })
+            return False, None
+
+    def test_pdf_export_nonexistent_project(self):
+        """Test PDF export for non-existent project (should return 404)"""
+        fake_id = "nonexistent-project-id-12345"
+        print(f"\n🚫 Testing PDF export for non-existent project...")
+        
+        success, response = self.run_test(
+            "Export PDF - Non-existent Project",
+            "GET",
+            f"projects/{fake_id}/export-pdf",
+            404
+        )
+        return success
+
+    def test_unicode_pdf_export(self):
+        """Test that PDF export handles Unicode characters properly"""
+        print(f"\n🌐 Testing Unicode character handling in PDF export...")
+        
+        # Create a project with Unicode characters
+        unicode_project_data = {
+            "name": "Test Unicode Project — "Smart quotes" & em-dashes…",
+            "description": "Testing Unicode: café, naïve, résumé, €100, 中文, 🚀",
+            "file_ids": []
+        }
+        
+        success, project = self.run_test(
+            "Create Unicode Project",
+            "POST",
+            "projects",
+            200,
+            data=unicode_project_data
+        )
+        
+        if success and isinstance(project, dict) and 'id' in project:
+            project_id = project['id']
+            print(f"✅ Unicode project created: {project_id[:8]}...")
+            
+            # Try to export the PDF
+            success, pdf_content = self.test_pdf_export_valid_project(project_id)
+            
+            if success and pdf_content:
+                print(f"✅ Unicode PDF export successful - Size: {len(pdf_content)} bytes")
+                return True
+            else:
+                print(f"❌ Unicode PDF export failed")
+                return False
+        else:
+            print(f"❌ Failed to create Unicode test project: {project}")
+            return False
+
+    def run_pdf_export_tests(self):
+        """Run comprehensive PDF export tests"""
+        print("\n" + "📄" * 30)
+        print("🧪 PDF Export Feature Test Suite")
+        print("📄" * 30)
+        
+        if not self.token:
+            print("❌ No authentication token available for PDF tests")
+            return False
+            
+        # Get available projects
+        success, projects = self.run_test("Get Projects for PDF Test", "GET", "projects", 200)
+        
+        if not success:
+            print("❌ Cannot get projects for PDF testing")
+            return False
+            
+        project_ids = [p.get('id') for p in projects if p.get('id')] if isinstance(projects, list) else []
+        
+        pdf_tests_passed = 0
+        pdf_tests_total = 0
+        
+        # Test 1: Export PDF for existing project (if any)
+        if project_ids:
+            pdf_tests_total += 1
+            if self.test_pdf_export_valid_project(project_ids[0]):
+                pdf_tests_passed += 1
+        else:
+            print("⚠️  No existing projects found for PDF export testing")
+            
+        # Test 2: Test 404 for non-existent project
+        pdf_tests_total += 1
+        if self.test_pdf_export_nonexistent_project():
+            pdf_tests_passed += 1
+            
+        # Test 3: Test Unicode handling
+        pdf_tests_total += 1
+        if self.test_unicode_pdf_export():
+            pdf_tests_passed += 1
+            
+        print(f"\n📊 PDF Export Tests: {pdf_tests_passed}/{pdf_tests_total} passed")
+        return pdf_tests_passed == pdf_tests_total
+
 def main():
     """Main test execution"""
     tester = ArchivaAPITester()
