@@ -315,34 +315,25 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
                 <>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">Select a project</label>
-                    <ScrollArea className="h-[180px] border rounded-md bg-white">
-                      <div className="p-1.5 space-y-1">
+                    <ScrollArea className="h-[160px] border rounded-md bg-white">
+                      <div className="p-1 space-y-0.5">
                         {projects.map((p) => (
                           <div
                             key={p.id}
-                            className={`flex items-center gap-3 p-2.5 rounded-md cursor-pointer transition-all ${
+                            className={`flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-all ${
                               selectedProjectId === p.id
-                                ? "bg-primary/10 border border-primary/30 ring-1 ring-primary/20"
+                                ? "bg-primary/10 border border-primary/30"
                                 : "hover:bg-muted border border-transparent"
                             }`}
                             onClick={() => setSelectedProjectId(p.id)}
                             data-testid={`select-project-${p.id}`}
                           >
-                            <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
-                              selectedProjectId === p.id ? "bg-primary/20" : "bg-muted"
-                            }`}>
-                              <FolderOpen className={`w-4 h-4 ${selectedProjectId === p.id ? "text-primary" : "text-muted-foreground"}`} />
-                            </div>
+                            <FolderOpen className={`w-4 h-4 flex-shrink-0 ${selectedProjectId === p.id ? "text-primary" : "text-muted-foreground"}`} />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{p.name}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-0.5">
-                                  <File className="w-2.5 h-2.5" /> {p.file_count} file{p.file_count !== 1 ? "s" : ""}
-                                </span>
-                                <span className="flex items-center gap-0.5">
-                                  <MessageSquare className="w-2.5 h-2.5" /> {p.message_count} msg{p.message_count !== 1 ? "s" : ""}
-                                </span>
-                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {p.file_count} file{p.file_count !== 1 ? "s" : ""} &middot; {p.message_count} msg{p.message_count !== 1 ? "s" : ""}
+                              </p>
                             </div>
                             {selectedProjectId === p.id && (
                               <Check className="w-4 h-4 text-primary flex-shrink-0" />
