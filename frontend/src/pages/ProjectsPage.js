@@ -352,6 +352,18 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
           <Button variant="outline" size="sm" onClick={onManageFiles} className="gap-1 h-7 text-xs" data-testid="manage-files-btn">
             <Settings className="w-3 h-3" /> Files
           </Button>
+          <Button
+            variant="outline" size="sm"
+            className="gap-1 h-7 text-xs"
+            data-testid="export-pdf-btn"
+            onClick={() => {
+              const token = localStorage.getItem("archiva_token");
+              const url = projectsAPI.exportPdf(project.id);
+              window.open(`${url}?token=${token}`, "_blank");
+            }}
+          >
+            <Download className="w-3 h-3" /> Export PDF
+          </Button>
         </div>
       </div>
 
