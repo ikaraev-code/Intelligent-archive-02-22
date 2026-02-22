@@ -636,6 +636,10 @@ These technologies are revolutionizing how we interact with data and make decisi
         self.test_embedding_status()
         self.test_projects_list()
 
+        # Test the new 'Save as Project' functionality
+        print("\n📁 Testing new 'Save as Project' feature...")
+        save_project_success = self.test_save_as_project_flow()
+
         # Print final summary
         self.print_summary()
         
