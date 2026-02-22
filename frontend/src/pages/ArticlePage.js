@@ -315,7 +315,7 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
                 <>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">Select a project</label>
-                    <ScrollArea className="h-[220px] border rounded-md">
+                    <ScrollArea className="h-[180px] border rounded-md bg-white">
                       <div className="p-1.5 space-y-1">
                         {projects.map((p) => (
                           <div
