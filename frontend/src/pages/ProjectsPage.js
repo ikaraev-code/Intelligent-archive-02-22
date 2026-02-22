@@ -356,10 +356,20 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
             variant="outline" size="sm"
             className="gap-1 h-7 text-xs"
             data-testid="export-pdf-btn"
-            onClick={() => {
-              const token = localStorage.getItem("archiva_token");
-              const url = projectsAPI.exportPdf(project.id);
-              window.open(`${url}?token=${token}`, "_blank");
+            onClick={async () => {
+              try {
+                toast.info("Generating PDF...");
+                const token = localStorage.getItem("archiva_token");
+                const res = await fetch(`${BACKEND_URL}/api/projects/${project.id}/export-pdf`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error("Export failed");
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+              } catch (err) {
+                toast.error("Failed to export PDF");
+              }
             }}
           >
             <Download className="w-3 h-3" /> Export PDF
