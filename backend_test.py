@@ -647,7 +647,7 @@ These technologies are revolutionizing how we interact with data and make decisi
         print("\n" + "🧠" * 20)
         rag_success = self.run_rag_pipeline_test()
         
-        return (self.tests_passed == self.tests_run) and rag_success
+        return (self.tests_passed == self.tests_run) and rag_success and save_project_success
 
     def print_summary(self):
         """Print test results summary"""
