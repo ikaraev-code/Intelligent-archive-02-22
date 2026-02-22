@@ -178,6 +178,205 @@ class ArchivaAPITester:
         )
         return success
 
+    def test_save_as_project_flow(self):
+        """Test the complete 'Save as Project' flow"""
+        print("\n📁 Testing Save as Project Flow...")
+        
+        # Step 1: Upload a test file about machine learning
+        print("  Step 1: Uploading test file about machine learning...")
+        test_content = """Machine Learning in Modern Applications
+
+Machine learning is transforming various industries through intelligent automation and data analysis:
+
+1. Natural Language Processing
+- Text classification and sentiment analysis
+- Language translation and chatbots
+- Document summarization and information extraction
+
+2. Computer Vision
+- Image recognition and object detection
+- Medical imaging analysis
+- Autonomous vehicle navigation
+
+3. Predictive Analytics
+- Financial market prediction
+- Customer behavior analysis
+- Supply chain optimization
+
+4. Recommendation Systems
+- E-commerce product recommendations
+- Content recommendation for streaming platforms
+- Personalized advertising
+
+These technologies are revolutionizing how we interact with data and make decisions.
+"""
+        
+        import tempfile
+        import os
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write(test_content)
+            temp_file_path = f.name
+        
+        try:
+            url = f"{self.base_url}/files/upload"
+            headers = {}
+            if self.token:
+                headers['Authorization'] = f'Bearer {self.token}'
+            
+            with open(temp_file_path, 'rb') as f:
+                files = {'file': ('machine_learning_test.txt', f, 'text/plain')}
+                data = {'tags': 'machine learning,ai,technology'}
+                
+                self.tests_run += 1
+                response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+                
+                if response.status_code == 200:
+                    self.tests_passed += 1
+                    upload_result = response.json()
+                    file_id = upload_result.get('id')
+                    print(f"    ✅ File uploaded - ID: {file_id}")
+                else:
+                    self.failed_tests.append({
+                        "name": "Upload ML File",
+                        "expected": 200,
+                        "actual": response.status_code,
+                        "error": response.text
+                    })
+                    print(f"    ❌ File upload failed: {response.status_code}")
+                    return False
+                    
+        except Exception as e:
+            self.failed_tests.append({
+                "name": "Upload ML File",
+                "expected": 200,
+                "actual": "Exception", 
+                "error": str(e)
+            })
+            print(f"    ❌ Upload error: {str(e)}")
+            return False
+        finally:
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+
+        # Step 2: Wait for embeddings and search for 'machine learning'
+        print("  Step 2: Waiting for embeddings and searching for 'machine learning'...")
+        import time
+        time.sleep(3)  # Wait for embeddings to process
+        
+        search_success, search_response = self.run_test(
+            "Search ML Content",
+            "GET",
+            "files/search?q=machine+learning",
+            200
+        )
+        
+        if not search_success:
+            print("    ❌ Search failed")
+            return False
+        
+        files = search_response.get('files', [])
+        if not files:
+            print("    ❌ No files found in search")
+            return False
+        
+        file_ids = [f['id'] for f in files[:2]]  # Take first 2 files
+        print(f"    ✅ Found {len(files)} files, using IDs: {file_ids}")
+
+        # Step 3: Summarize the files
+        print("  Step 3: Summarizing the selected files...")
+        
+        summarize_success, summarize_response = self.run_test(
+            "Summarize ML Files", 
+            "POST",
+            "files/summarize",
+            200,
+            data={
+                "file_ids": file_ids,
+                "query": "machine learning"
+            }
+        )
+        
+        if not summarize_success:
+            print("    ❌ Summarization failed")
+            return False
+            
+        article = summarize_response
+        print(f"    ✅ Summary generated - Title: '{article.get('title', 'N/A')}'")
+
+        # Step 4: Create a project with the summary and file_ids  
+        print("  Step 4: Creating project with summary and file IDs...")
+        
+        project_data = {
+            "name": "Machine Learning Research Project",
+            "description": f"Summary: {article.get('content', '')[:500]}...",
+            "file_ids": file_ids
+        }
+        
+        create_success, create_response = self.run_test(
+            "Create Project",
+            "POST", 
+            "projects",
+            200,
+            data=project_data
+        )
+        
+        if not create_success:
+            print("    ❌ Project creation failed")
+            return False
+            
+        project_id = create_response.get('id')
+        print(f"    ✅ Project created - ID: {project_id}")
+
+        # Step 5: Verify project was created correctly
+        print("  Step 5: Verifying project creation...")
+        
+        get_success, get_response = self.run_test(
+            "Get Created Project",
+            "GET",
+            f"projects/{project_id}",
+            200
+        )
+        
+        if not get_success:
+            print("    ❌ Project retrieval failed")
+            return False
+            
+        project = get_response
+        project_file_ids = project.get('file_ids', [])
+        
+        # Verify the project contains the correct file_ids
+        if set(project_file_ids) == set(file_ids):
+            print(f"    ✅ Project contains correct files: {project_file_ids}")
+        else:
+            print(f"    ❌ Project file IDs mismatch. Expected: {file_ids}, Got: {project_file_ids}")
+            return False
+
+        # Step 6: Verify project appears in projects list
+        print("  Step 6: Verifying project appears in list...")
+        
+        list_success, list_response = self.run_test(
+            "List Projects (Verify)",
+            "GET",
+            "projects", 
+            200
+        )
+        
+        if not list_success:
+            print("    ❌ Projects list failed")
+            return False
+            
+        projects = list_response if isinstance(list_response, list) else []
+        project_found = any(p.get('id') == project_id for p in projects)
+        
+        if project_found:
+            print(f"    ✅ Project found in list")
+            return True
+        else:
+            print(f"    ❌ Project not found in list")
+            return False
+
     def test_file_upload(self):
         """Test file upload with AI tagging"""
         print("\n🔍 Testing File Upload with AI Tagging...")
