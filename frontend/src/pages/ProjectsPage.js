@@ -37,6 +37,7 @@ import {
   VolumeX,
   Grid3X3,
   List,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
