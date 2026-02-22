@@ -372,6 +372,10 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     file_ids: Optional[List[str]] = None
 
+class ProjectAppend(BaseModel):
+    file_ids: List[str] = []
+    summary: Optional[str] = None
+
 class ProjectChatRequest(BaseModel):
     message: str
     include_file_context: bool = True
