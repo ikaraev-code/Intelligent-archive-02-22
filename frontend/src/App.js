@@ -1,52 +1,118 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import AuthPage from "./pages/AuthPage";
+import DashboardPage from "./pages/DashboardPage";
+import UploadPage from "./pages/UploadPage";
+import LibraryPage from "./pages/LibraryPage";
+import SearchPage from "./pages/SearchPage";
+import ArticlePage from "./pages/ArticlePage";
+import FileDetailPage from "./pages/FileDetailPage";
+import AIChatPage from "./pages/AIChatPage";
+import ProjectsPage from "./pages/ProjectsPage";
+import { Sidebar } from "./components/Sidebar";
+import { InstallPrompt } from "./components/InstallPrompt";
+import { Toaster } from "./components/ui/sonner";
+import { authAPI } from "./lib/api";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((reg) => console.log('SW registered:', reg.scope))
+      .catch((err) => console.log('SW registration failed:', err));
+  });
+}
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+function App() {
+  const [user, setUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [pageData, setPageData] = useState({});
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("archiva_token");
+    const storedUser = localStorage.getItem("archiva_user");
+    if (token && storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem("archiva_token");
+        localStorage.removeItem("archiva_user");
+      }
+    }
+    setAuthChecked(true);
+  }, []);
+
+  const handleAuth = (userData) => {
+    setUser(userData);
+    setCurrentPage("dashboard");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("archiva_token");
+    localStorage.removeItem("archiva_user");
+    setUser(null);
+    setCurrentPage("dashboard");
+    setPageData({});
+  };
+
+  const handleNavigate = (page, data = {}) => {
+    if (page === currentPage) {
+      data._resetKey = Date.now();
+    }
+    setCurrentPage(page);
+    setPageData(data);
+    window.scrollTo(0, 0);
+  };
+
+  if (!authChecked) return null;
+
+  if (!user) {
+    return (
+      <>
+        <AuthPage onAuth={handleAuth} />
+        <InstallPrompt />
+        <Toaster position="top-right" richColors />
+      </>
+    );
+  }
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case "dashboard":
+        return <DashboardPage onNavigate={handleNavigate} />;
+      case "upload":
+        return <UploadPage />;
+      case "library":
+        return <LibraryPage onNavigate={handleNavigate} initialTag={pageData.tag} />;
+      case "search":
+        return <SearchPage onNavigate={handleNavigate} initialQuery={pageData.query} />;
+      case "article":
+        return <ArticlePage article={pageData.article} query={pageData.query} onNavigate={handleNavigate} />;
+      case "file-detail":
+        return <FileDetailPage fileId={pageData.fileId} onNavigate={handleNavigate} />;
+      case "ai-chat":
+        return <AIChatPage />;
+      case "projects":
+        return <ProjectsPage key={pageData._resetKey || 'projects'} />;
+      default:
+        return <DashboardPage onNavigate={handleNavigate} />;
     }
   };
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
-
-function App() {
-  return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+    <div className="flex min-h-screen bg-background" data-testid="app-container">
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+        user={user}
+      />
+      <main className="flex-1 md:ml-64 pt-14 md:pt-0 p-4 md:p-8 max-w-7xl">
+        {renderPage()}
+      </main>
+      <InstallPrompt />
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
