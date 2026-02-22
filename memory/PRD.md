@@ -2,12 +2,15 @@
 
 ## Original Problem Statement
 Rebuild Archiva app from GitHub repository: https://github.com/ikaraev-code/Intelligent-archive
+Then integrate OpenAI API key for full RAG (Retrieval-Augmented Generation) pipeline.
 
 ## Architecture
 - **Frontend**: React.js with Tailwind CSS, shadcn/ui components, Framer Motion animations
 - **Backend**: FastAPI (Python) with JWT authentication
 - **Database**: MongoDB
-- **AI Integration**: OpenAI (via Emergent LLM key) for AI tagging, chat, and embeddings
+- **AI Integration**: 
+  - OpenAI `text-embedding-3-small` for document embeddings & semantic search
+  - Emergent LLM key for AI chat (GPT) & auto-tagging
 - **PWA**: Service worker for offline support and installability
 
 ## User Personas
@@ -31,17 +34,18 @@ Rebuild Archiva app from GitHub repository: https://github.com/ikaraev-code/Inte
 - Backend: All API endpoints working (auth, files, search, projects, AI chat, stats)
 - Frontend: All 9 pages (Auth, Dashboard, Upload, Library, Search, AI Chat, Projects, FileDetail, Article)
 - Components: Sidebar navigation, FileCard, ObjectViewer, InstallPrompt
-- Emergent LLM key configured for AI features
-- All dependencies installed and services running
-- Testing: Backend 100%, Frontend 95% pass rate
+- OpenAI API key configured for embeddings (text-embedding-3-small)
+- Emergent LLM key configured for AI chat & tagging
+- RAG pipeline fully operational: upload → AI tagging → embedding → semantic search → AI chat with sources
+- Testing: Backend 100%, Frontend confirmed working
 
 ## Prioritized Backlog
 ### P0 (Critical)
 - None - all core features operational
 
 ### P1 (Important)
-- Configure OpenAI API key for embedding-based semantic search
-- Test file upload end-to-end with various file types
+- Test file upload with PDF, DOCX, and image files
+- Batch re-indexing for existing files
 
 ### P2 (Nice to have)
 - Performance optimization for large file libraries
@@ -49,4 +53,5 @@ Rebuild Archiva app from GitHub repository: https://github.com/ikaraev-code/Inte
 - Batch file operations (multi-select, bulk tag)
 
 ## Next Tasks
-- User can now test the app and request specific improvements or bug fixes
+- User can test the app end-to-end with their own documents
+- Consider adding more file type support or custom AI models
