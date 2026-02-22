@@ -1420,6 +1420,53 @@ async def update_project(project_id: str, data: ProjectUpdate, user=Depends(get_
     updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
     return updated
 
+@api_router.post("/projects/{project_id}/append")
+async def append_to_project(project_id: str, data: ProjectAppend, user=Depends(get_current_user)):
+    """Append files and/or a summary to an existing project"""
+    project = await db.projects.find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    existing_file_ids = project.get("file_ids", [])
+    
+    # Merge and deduplicate file_ids
+    if data.file_ids:
+        valid_files = await db.files.find(
+            {"id": {"$in": data.file_ids}, "$or": [{"user_id": user["id"]}, {"is_public": True}]},
+            {"id": 1}
+        ).to_list(1000)
+        new_ids = [f["id"] for f in valid_files]
+        merged_ids = list(dict.fromkeys(existing_file_ids + new_ids))  # preserves order, deduplicates
+    else:
+        merged_ids = existing_file_ids
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"file_ids": merged_ids, "updated_at": now}}
+    )
+    
+    # Add summary as a new assistant message
+    if data.summary:
+        summary_msg = {
+            "id": str(uuid.uuid4()),
+            "project_id": project_id,
+            "role": "assistant",
+            "content": data.summary,
+            "sources": [],
+            "created_at": now
+        }
+        await db.project_messages.insert_one(summary_msg)
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$set": {"last_message_at": now}}
+        )
+    
+    added_count = len(merged_ids) - len(existing_file_ids)
+    updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    updated["files_added"] = added_count
+    return updated
+
 @api_router.delete("/projects/{project_id}")
 async def delete_project(project_id: str, user=Depends(get_current_user)):
     """Delete a project and all its messages"""
