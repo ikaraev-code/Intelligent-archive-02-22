@@ -1523,7 +1523,7 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
         pdf.set_font("Helvetica", "I", 10)
         pdf.set_text_color(100, 100, 100)
         for line in textwrap.wrap(desc, width=90):
-            pdf.cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
+            safe_cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
         pdf.set_text_color(0, 0, 0)
     pdf.ln(4)
     
@@ -1531,7 +1531,7 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(120, 120, 120)
     meta = f"Files: {len(file_ids)}  |  Messages: {len(messages)}  |  Exported: {datetime.now(timezone.utc).strftime('%B %d, %Y')}"
-    pdf.cell(0, 5, txt=meta, new_x="LMARGIN", new_y="NEXT")
+    safe_cell(0, 5, txt=meta, new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0, 0, 0)
     pdf.ln(2)
     
@@ -1543,7 +1543,7 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
     # Files section
     if files:
         pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, txt="Source Files", new_x="LMARGIN", new_y="NEXT")
+        safe_cell(0, 8, txt="Source Files", new_x="LMARGIN", new_y="NEXT")
         pdf.ln(2)
         pdf.set_font("Helvetica", "", 10)
         for i, f in enumerate(files):
@@ -1553,11 +1553,11 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
             bullet = f"{i+1}. {name}"
             if ftype:
                 bullet += f"  ({ftype})"
-            pdf.cell(0, 6, txt=bullet, new_x="LMARGIN", new_y="NEXT")
+            safe_cell(0, 6, txt=bullet, new_x="LMARGIN", new_y="NEXT")
             if tags:
                 pdf.set_font("Helvetica", "I", 9)
                 pdf.set_text_color(100, 100, 100)
-                pdf.cell(0, 5, txt=f"   Tags: {tags}", new_x="LMARGIN", new_y="NEXT")
+                safe_cell(0, 5, txt=f"   Tags: {tags}", new_x="LMARGIN", new_y="NEXT")
                 pdf.set_text_color(0, 0, 0)
                 pdf.set_font("Helvetica", "", 10)
         pdf.ln(4)
@@ -1568,7 +1568,7 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
     # Messages section
     if messages:
         pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, txt="Conversation", new_x="LMARGIN", new_y="NEXT")
+        safe_cell(0, 8, txt="Conversation", new_x="LMARGIN", new_y="NEXT")
         pdf.ln(3)
         
         for msg in messages:
@@ -1579,11 +1579,11 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
             if role == "assistant":
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(59, 130, 246)
-                pdf.cell(0, 6, txt="AI Archivist", new_x="LMARGIN", new_y="NEXT")
+                safe_cell(0, 6, txt="AI Archivist", new_x="LMARGIN", new_y="NEXT")
             else:
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(30, 30, 30)
-                pdf.cell(0, 6, txt="You", new_x="LMARGIN", new_y="NEXT")
+                safe_cell(0, 6, txt="You", new_x="LMARGIN", new_y="NEXT")
             
             pdf.set_text_color(40, 40, 40)
             pdf.set_font("Helvetica", "", 10)
@@ -1600,18 +1600,18 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
                 if para.startswith('## '):
                     pdf.set_font("Helvetica", "B", 11)
                     for line in textwrap.wrap(para[3:], width=85):
-                        pdf.cell(0, 6, txt=line, new_x="LMARGIN", new_y="NEXT")
+                        safe_cell(0, 6, txt=line, new_x="LMARGIN", new_y="NEXT")
                     pdf.set_font("Helvetica", "", 10)
                 elif para.startswith('# '):
                     pdf.set_font("Helvetica", "B", 12)
                     for line in textwrap.wrap(para[2:], width=80):
-                        pdf.cell(0, 7, txt=line, new_x="LMARGIN", new_y="NEXT")
+                        safe_cell(0, 7, txt=line, new_x="LMARGIN", new_y="NEXT")
                     pdf.set_font("Helvetica", "", 10)
                 else:
                     # Strip markdown bold/italic markers for PDF
                     display = para.replace('**', '').replace('*', '')
                     for line in textwrap.wrap(display, width=90):
-                        pdf.cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
+                        safe_cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
             
             # Sources
             sources = msg.get("sources", [])
@@ -1619,7 +1619,7 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
                 unique = list(dict.fromkeys(s.get("filename", s) if isinstance(s, dict) else s for s in sources))
                 pdf.set_font("Helvetica", "I", 8)
                 pdf.set_text_color(120, 120, 120)
-                pdf.cell(0, 5, txt=f"Sources: {', '.join(unique)}", new_x="LMARGIN", new_y="NEXT")
+                safe_cell(0, 5, txt=f"Sources: {', '.join(unique)}", new_x="LMARGIN", new_y="NEXT")
                 pdf.set_text_color(40, 40, 40)
                 pdf.set_font("Helvetica", "", 10)
             
@@ -1632,7 +1632,7 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
     pdf.ln(4)
     pdf.set_font("Helvetica", "I", 8)
     pdf.set_text_color(150, 150, 150)
-    pdf.cell(0, 5, txt=f"Generated by Archiva - Intelligent Multimedia Archive", new_x="LMARGIN", new_y="NEXT")
+    safe_cell(0, 5, txt="Generated by Archiva - Intelligent Multimedia Archive", new_x="LMARGIN", new_y="NEXT")
     
     # Output
     safe_name = re.sub(r'[^\w\s-]', '', project.get("name", "project")).strip().replace(' ', '_')[:50]
