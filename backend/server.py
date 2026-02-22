@@ -1328,6 +1328,24 @@ async def create_project(data: ProjectCreate, user=Depends(get_current_user)):
     }
     await db.projects.insert_one(project_doc)
     project_doc.pop("_id", None)
+    
+    # If summary provided (e.g. from search summarization), seed it as first assistant message
+    if data.summary:
+        now_msg = datetime.now(timezone.utc).isoformat()
+        summary_msg = {
+            "id": str(uuid.uuid4()),
+            "project_id": project_id,
+            "role": "assistant",
+            "content": data.summary,
+            "sources": [],
+            "created_at": now_msg
+        }
+        await db.project_messages.insert_one(summary_msg)
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$set": {"last_message_at": now_msg, "updated_at": now_msg}}
+        )
+    
     return project_doc
 
 @api_router.get("/projects")
