@@ -178,6 +178,137 @@ class ArchivaAPITester:
         )
         return success
 
+    def test_project_append_functionality(self):
+        """Test the new project append functionality"""
+        print("\n📁 Testing Project Append Feature...")
+        
+        # First, ensure we have some files to work with
+        upload_success, upload_result = self.test_file_upload()
+        if not upload_success:
+            print("    ❌ Cannot test append without files")
+            return False
+            
+        file_id = upload_result.get('id')
+        
+        # Step 1: Create a test project
+        print("  Step 1: Creating test project for append testing...")
+        project_data = {
+            "name": f"Append Test Project {datetime.now().strftime('%H%M%S')}",
+            "description": "Test project for append functionality",
+            "file_ids": [],
+            "summary": "Initial project summary"
+        }
+        
+        create_success, create_response = self.run_test(
+            "Create Test Project for Append",
+            "POST",
+            "projects",
+            200,
+            data=project_data
+        )
+        
+        if not create_success:
+            print("    ❌ Failed to create test project")
+            return False
+            
+        project_id = create_response.get('id')
+        print(f"    ✅ Test project created - ID: {project_id}")
+        
+        # Step 2: Test append files and summary to project
+        print("  Step 2: Testing append files and summary...")
+        append_data = {
+            "file_ids": [file_id],
+            "summary": f"Appended summary at {datetime.now().isoformat()}"
+        }
+        
+        append_success, append_response = self.run_test(
+            "Append to Project",
+            "POST",
+            f"projects/{project_id}/append",
+            200,
+            data=append_data
+        )
+        
+        if not append_success:
+            print("    ❌ Project append failed")
+            return False
+            
+        files_added = append_response.get('files_added', 0)
+        print(f"    ✅ Append successful - {files_added} files added")
+        
+        # Step 3: Test file deduplication (append same file again)
+        print("  Step 3: Testing file deduplication...")
+        duplicate_append_success, duplicate_response = self.run_test(
+            "Append Duplicate Files (Test Deduplication)",
+            "POST",
+            f"projects/{project_id}/append",
+            200,
+            data=append_data  # Same data as before
+        )
+        
+        if duplicate_append_success:
+            duplicate_files_added = duplicate_response.get('files_added', 0)
+            print(f"    ✅ Duplicate append completed - {duplicate_files_added} files added")
+            if duplicate_files_added == 0:
+                print("    ✅ File deduplication working correctly")
+            else:
+                print("    ❌ File deduplication failed - duplicate files were added")
+                
+        # Step 4: Verify summary appears as new message
+        print("  Step 4: Checking if summary appears as new message...")
+        messages_success, messages_response = self.run_test(
+            "Get Project Messages",
+            "GET",
+            f"projects/{project_id}/messages",
+            200
+        )
+        
+        if messages_success:
+            messages = messages_response.get('messages', [])
+            print(f"    ✅ Project has {len(messages)} messages")
+            
+            # Check if our appended summary appears in messages
+            summary_found = any("Appended summary" in msg.get('content', '') for msg in messages)
+            if summary_found:
+                print("    ✅ Appended summary found in project messages")
+            else:
+                print("    ❌ Appended summary not found in messages")
+                
+        # Step 5: Verify project list shows correct file counts
+        print("  Step 5: Verifying project list shows correct counts...")
+        list_success, list_response = self.run_test(
+            "List Projects (Check Counts)",
+            "GET",
+            "projects",
+            200
+        )
+        
+        if list_success:
+            projects = list_response if isinstance(list_response, list) else []
+            test_project = next((p for p in projects if p.get('id') == project_id), None)
+            
+            if test_project:
+                file_count = test_project.get('file_count', 0)
+                message_count = test_project.get('message_count', 0)
+                print(f"    ✅ Project shows {file_count} files, {message_count} messages")
+            else:
+                print("    ❌ Test project not found in list")
+                
+        # Step 6: Test append to non-existent project (should fail)
+        print("  Step 6: Testing append to non-existent project...")
+        invalid_append_success, _ = self.run_test(
+            "Append to Non-existent Project",
+            "POST",
+            "projects/invalid-project-id/append",
+            404,  # Should return 404
+            data=append_data
+        )
+        
+        if invalid_append_success:
+            print("    ✅ Correctly rejected append to non-existent project")
+        
+        return True
+
     def test_save_as_project_flow(self):
         """Test the complete 'Save as Project' flow"""
         print("\n📁 Testing Save as Project Flow...")
