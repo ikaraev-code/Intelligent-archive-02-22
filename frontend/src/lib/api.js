@@ -76,6 +76,7 @@ export const projectsAPI = {
   get: (id) => api.get(`/projects/${id}`),
   update: (id, data) => api.put(`/projects/${id}`, data),
   append: (id, data) => api.post(`/projects/${id}/append`, data),
+  exportPdf: (id) => `${BACKEND_URL}/api/projects/${id}/export-pdf`,
   delete: (id) => api.delete(`/projects/${id}`),
   getMessages: (id) => api.get(`/projects/${id}/messages`),
   chat: (id, message, includeFileContext = true) => 
