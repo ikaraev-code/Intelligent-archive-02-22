@@ -2,7 +2,7 @@
 
 ## Original Problem Statement
 Rebuild Archiva app from GitHub repository: https://github.com/ikaraev-code/Intelligent-archive
-Then integrate OpenAI API key for full RAG (Retrieval-Augmented Generation) pipeline.
+Then integrate OpenAI API key for full RAG pipeline and add "Save as Project" feature from search summaries.
 
 ## Architecture
 - **Frontend**: React.js with Tailwind CSS, shadcn/ui components, Framer Motion animations
@@ -28,30 +28,36 @@ Then integrate OpenAI API key for full RAG (Retrieval-Augmented Generation) pipe
 7. File detail view with content preview (PDF, images, text, DOCX)
 8. Dashboard with stats overview
 9. PWA support for mobile installation
+10. **NEW**: Save search summaries + selected files as Projects
 
-## What's Been Implemented (Feb 22, 2026)
+## What's Been Implemented
+### Feb 22, 2026 - Initial Rebuild
 - Full rebuild from GitHub source code
-- Backend: All API endpoints working (auth, files, search, projects, AI chat, stats)
-- Frontend: All 9 pages (Auth, Dashboard, Upload, Library, Search, AI Chat, Projects, FileDetail, Article)
-- Components: Sidebar navigation, FileCard, ObjectViewer, InstallPrompt
-- OpenAI API key configured for embeddings (text-embedding-3-small)
-- Emergent LLM key configured for AI chat & tagging
-- RAG pipeline fully operational: upload → AI tagging → embedding → semantic search → AI chat with sources
-- Testing: Backend 100%, Frontend confirmed working
+- Backend: All API endpoints (auth, files, search, projects, AI chat, stats)
+- Frontend: All 9 pages
+- OpenAI embeddings & RAG pipeline fully operational
+
+### Feb 22, 2026 - Save as Project Feature
+- Added "Save as Project" button to ArticlePage
+- Flow: Search → Select files → Summarize → Save as Project (with editable name)
+- Project stores: selected file_ids, AI summary as description, search query context
+- Shows confirmation with "Open Projects" navigation
+- Also includes bottom CTA card for discoverability
 
 ## Prioritized Backlog
 ### P0 (Critical)
 - None - all core features operational
 
 ### P1 (Important)
-- Test file upload with PDF, DOCX, and image files
+- Test with PDF, DOCX, and image uploads
 - Batch re-indexing for existing files
 
 ### P2 (Nice to have)
 - Performance optimization for large file libraries
 - Advanced search filters (date range, file size)
 - Batch file operations (multi-select, bulk tag)
+- Export project summaries as PDF
 
 ## Next Tasks
-- User can test the app end-to-end with their own documents
-- Consider adding more file type support or custom AI models
+- User can test the full Search → Summarize → Save as Project flow
+- Consider adding ability to append more files to existing projects from search
