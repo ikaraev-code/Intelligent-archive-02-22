@@ -917,7 +917,7 @@ These technologies are revolutionizing how we interact with data and make decisi
         
         # Create a project with Unicode characters
         unicode_project_data = {
-            "name": "Test Unicode Project — "Smart quotes" & em-dashes…",
+            "name": "Test Unicode Project — \"Smart quotes\" & em-dashes…",
             "description": "Testing Unicode: café, naïve, résumé, €100, 中文, 🚀",
             "file_ids": []
         }
