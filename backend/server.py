@@ -1468,7 +1468,7 @@ async def append_to_project(project_id: str, data: ProjectAppend, user=Depends(g
     return updated
 
 @api_router.get("/projects/{project_id}/export-pdf")
-async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
+async def export_project_pdf(project_id: str, token: Optional[str] = None, user=Depends(get_current_user)):
     """Export project content (messages + file list) as a PDF"""
     from fpdf import FPDF
     import textwrap
