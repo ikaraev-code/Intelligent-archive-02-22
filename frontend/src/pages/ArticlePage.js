@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { ArrowLeft, BookOpen, FileText, Sparkles, FolderPlus, Loader2, Check, FolderOpen, MessageSquare, File, Plus } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Sparkles, FolderPlus, Loader2, Check, FolderOpen, Plus } from "lucide-react";
 import { projectsAPI } from "../lib/api";
 import { toast } from "sonner";
 
