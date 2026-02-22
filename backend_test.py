@@ -287,16 +287,43 @@ These technologies are revolutionizing how we interact with data and make decisi
         # Step 3: Summarize the files
         print("  Step 3: Summarizing the selected files...")
         
-        summarize_success, summarize_response = self.run_test(
-            "Summarize ML Files", 
-            "POST",
-            "files/summarize",
-            200,
-            data={
+        # Test with longer timeout for AI summarization
+        print("    (Note: AI summarization may take 10-30 seconds...)")
+        url = f"{self.base_url}/files/summarize"
+        test_headers = {'Content-Type': 'application/json'}
+        if self.token:
+            test_headers['Authorization'] = f'Bearer {self.token}'
+
+        self.tests_run += 1
+        try:
+            response = requests.post(url, json={
                 "file_ids": file_ids,
                 "query": "machine learning"
-            }
-        )
+            }, headers=test_headers, timeout=45)  # 45 second timeout
+
+            if response.status_code == 200:
+                self.tests_passed += 1
+                summarize_response = response.json()
+                summarize_success = True
+                print(f"    ✅ Summarization successful")
+            else:
+                self.failed_tests.append({
+                    "name": "Summarize ML Files",
+                    "expected": 200,
+                    "actual": response.status_code,
+                    "error": response.text
+                })
+                print(f"    ❌ Summarization failed: {response.status_code}")
+                return False
+        except Exception as e:
+            self.failed_tests.append({
+                "name": "Summarize ML Files",
+                "expected": 200,
+                "actual": "Exception",
+                "error": str(e)
+            })
+            print(f"    ❌ Summarization error: {str(e)}")
+            return False
         
         if not summarize_success:
             print("    ❌ Summarization failed")
