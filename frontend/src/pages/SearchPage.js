@@ -73,7 +73,7 @@ export default function SearchPage({ onNavigate, initialQuery }) {
     setSummarizing(true);
     try {
       const res = await filesAPI.summarize({ file_ids: selectedIds, query });
-      onNavigate("article", { article: res.data, query });
+      onNavigate("article", { article: res.data, query, fileIds: selectedIds });
     } catch (err) {
       toast.error("Summarization failed");
     } finally {

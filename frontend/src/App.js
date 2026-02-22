@@ -88,7 +88,7 @@ function App() {
       case "search":
         return <SearchPage onNavigate={handleNavigate} initialQuery={pageData.query} />;
       case "article":
-        return <ArticlePage article={pageData.article} query={pageData.query} onNavigate={handleNavigate} />;
+        return <ArticlePage article={pageData.article} query={pageData.query} fileIds={pageData.fileIds} onNavigate={handleNavigate} />;
       case "file-detail":
         return <FileDetailPage fileId={pageData.fileId} onNavigate={handleNavigate} />;
       case "ai-chat":
