@@ -249,13 +249,13 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
 
       {/* Save to Project Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" data-testid="save-project-dialog">
+        <DialogContent className="max-w-md !max-h-[80vh] flex flex-col" data-testid="save-project-dialog">
           <DialogHeader>
             <DialogTitle>Save to Project</DialogTitle>
           </DialogHeader>
 
-          <Tabs value={dialogTab} onValueChange={setDialogTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+          <Tabs value={dialogTab} onValueChange={setDialogTab} className="w-full flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 mb-4 flex-shrink-0">
               <TabsTrigger value="new" data-testid="tab-new-project">
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> New Project
               </TabsTrigger>
