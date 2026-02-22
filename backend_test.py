@@ -178,6 +178,236 @@ class ArchivaAPITester:
         )
         return success
 
+    def test_file_upload(self):
+        """Test file upload with AI tagging"""
+        print("\n🔍 Testing File Upload with AI Tagging...")
+        url = f"{self.base_url}/files/upload"
+        
+        # Create test content about AI in healthcare
+        test_content = """AI Applications in Healthcare
+
+        Artificial Intelligence is revolutionizing healthcare through various applications:
+
+        1. Medical Imaging and Diagnostics
+        - Cancer detection in radiology scans
+        - Automated analysis of X-rays, CT scans, and MRIs
+        - Early detection of diseases like diabetic retinopathy
+
+        2. Drug Discovery and Development
+        - Accelerating the identification of new drug compounds
+        - Predicting drug interactions and side effects
+        - Optimizing clinical trial design
+
+        3. Personalized Medicine
+        - Tailoring treatments based on genetic profiles
+        - Precision dosing of medications
+        - Predictive analytics for patient outcomes
+
+        4. Virtual Health Assistants
+        - AI-powered chatbots for patient support
+        - Symptom checkers and triage systems
+        - Medication reminders and adherence monitoring
+
+        These applications are transforming patient care and medical research.
+        """
+        
+        # Create a temporary file
+        import tempfile
+        import os
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write(test_content)
+            temp_file_path = f.name
+        
+        try:
+            headers = {}
+            if self.token:
+                headers['Authorization'] = f'Bearer {self.token}'
+            
+            # Upload file
+            with open(temp_file_path, 'rb') as f:
+                files = {'file': ('test_document.txt', f, 'text/plain')}
+                data = {'tags': 'healthcare,ai,medical'}
+                
+                self.tests_run += 1
+                response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+                
+                if response.status_code == 200:
+                    self.tests_passed += 1
+                    result = response.json()
+                    print(f"✅ File upload successful - File ID: {result.get('id', 'N/A')}")
+                    print(f"   AI Tags generated: {result.get('ai_tags', [])}")
+                    print(f"   All tags: {result.get('tags', [])}")
+                    print(f"   File size: {result.get('file_size', 0)} bytes")
+                    return True, result
+                else:
+                    self.failed_tests.append({
+                        "name": "File Upload",
+                        "expected": 200,
+                        "actual": response.status_code,
+                        "error": response.text
+                    })
+                    print(f"❌ File upload failed - Status: {response.status_code}")
+                    print(f"   Error: {response.text[:200]}")
+                    return False, {}
+                    
+        except Exception as e:
+            self.failed_tests.append({
+                "name": "File Upload", 
+                "expected": 200,
+                "actual": "Exception",
+                "error": str(e)
+            })
+            print(f"❌ File upload error: {str(e)}")
+            return False, {}
+        finally:
+            # Clean up temp file
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+
+    def test_embedding_status_enabled(self):
+        """Test that embedding status shows enabled and rag_ready is true"""
+        success, response = self.run_test(
+            "Embedding Status (RAG Ready Check)",
+            "GET",
+            "files/embedding-status",
+            200
+        )
+        if success:
+            status = response.get('status')
+            rag_ready = response.get('rag_ready', False)
+            print(f"   Embedding Status: {status}")
+            print(f"   RAG Ready: {rag_ready}")
+            print(f"   Total Files: {response.get('total_files', 0)}")
+            print(f"   Files with Embeddings: {response.get('files_with_embeddings', 0)}")
+            print(f"   Total Embeddings: {response.get('total_embeddings', 0)}")
+            
+            if status == 'enabled' and rag_ready:
+                print(f"✅ RAG system is ready!")
+                return True
+            else:
+                print(f"⚠️  RAG system not ready - Status: {status}, RAG Ready: {rag_ready}")
+                return False
+        return False
+
+    def test_semantic_search(self):
+        """Test semantic search functionality"""
+        success, response = self.run_test(
+            "Semantic Search - Healthcare Query",
+            "GET",
+            "files/search?q=healthcare&smart=true",
+            200
+        )
+        if success:
+            files = response.get('files', [])
+            search_type = response.get('search_type', 'unknown')
+            semantic_enabled = response.get('semantic_enabled', False)
+            
+            print(f"   Search Type: {search_type}")
+            print(f"   Semantic Enabled: {semantic_enabled}")
+            print(f"   Results Found: {len(files)}")
+            
+            if files:
+                for file in files[:2]:  # Show first 2 results
+                    search_info = file.get('_search_info', {})
+                    print(f"   - {file.get('original_filename', 'Unknown')}")
+                    print(f"     Match Types: {search_info.get('match_types', [])}")
+                    print(f"     Score: {search_info.get('score', 'N/A')}")
+            
+            return len(files) > 0
+        return False
+
+    def test_ai_chat_rag(self):
+        """Test AI chat with RAG context"""
+        success, response = self.run_test(
+            "AI Chat RAG Query",
+            "POST", 
+            "chat",
+            200,
+            data={
+                "message": "What applications of AI are in my documents?",
+                "include_file_context": True
+            }
+        )
+        if success:
+            ai_response = response.get('response', '')
+            sources = response.get('sources', [])
+            session_id = response.get('session_id', '')
+            
+            print(f"   AI Response Length: {len(ai_response)} characters")
+            print(f"   Sources Found: {len(sources)}")
+            print(f"   Session ID: {session_id[:20]}..." if session_id else "N/A")
+            
+            if sources:
+                print(f"   Source Files:")
+                for source in sources[:3]:  # Show first 3 sources
+                    print(f"   - {source.get('filename', 'Unknown')} (relevance: {source.get('relevance', 'N/A')})")
+            
+            # Check if response mentions healthcare/medical content
+            healthcare_terms = ['healthcare', 'medical', 'cancer', 'diagnostic', 'patient', 'clinical']
+            found_terms = [term for term in healthcare_terms if term.lower() in ai_response.lower()]
+            
+            print(f"   Healthcare terms found: {found_terms}")
+            
+            return len(ai_response) > 50 and len(sources) > 0
+        return False
+
+    def run_rag_pipeline_test(self):
+        """Run comprehensive RAG pipeline test"""
+        print("=" * 70)
+        print("🧠 Starting RAG Pipeline Comprehensive Test")
+        print(f"Base URL: {self.base_url}")
+        print("=" * 70)
+
+        # Step 1: Ensure we're authenticated
+        if not self.token:
+            print("🔄 Authenticating first...")
+            login_success = self.test_login()
+            if not login_success:
+                print("❌ Authentication failed. Cannot test RAG pipeline.")
+                return False
+
+        # Step 2: Test file upload with AI tagging
+        print("\n📤 Step 1: Testing File Upload with AI Tagging...")
+        upload_success, upload_result = self.test_file_upload()
+        
+        # Step 3: Check embedding status 
+        print("\n🧠 Step 2: Checking Embedding Status...")
+        import time
+        time.sleep(2)  # Give time for embeddings to process
+        embedding_ready = self.test_embedding_status_enabled()
+        
+        # Step 4: Test semantic search
+        print("\n🔍 Step 3: Testing Semantic Search...")
+        time.sleep(1)  # Brief pause
+        search_success = self.test_semantic_search()
+        
+        # Step 5: Test AI chat with RAG
+        print("\n💬 Step 4: Testing AI Chat with RAG...")
+        time.sleep(1)  # Brief pause
+        chat_success = self.test_ai_chat_rag()
+        
+        # Summary
+        print("\n" + "=" * 70)
+        print("🧠 RAG PIPELINE TEST RESULTS")
+        print("=" * 70)
+        steps = [
+            ("File Upload with AI Tagging", upload_success),
+            ("Embedding Status (RAG Ready)", embedding_ready), 
+            ("Semantic Search", search_success),
+            ("AI Chat with RAG", chat_success)
+        ]
+        
+        for step_name, success in steps:
+            status = "✅ PASS" if success else "❌ FAIL"
+            print(f"{step_name}: {status}")
+        
+        passed_steps = sum(1 for _, success in steps if success)
+        print(f"\nRAG Pipeline Success Rate: {passed_steps}/{len(steps)} ({passed_steps/len(steps)*100:.1f}%)")
+        
+        return passed_steps == len(steps)
+
     def run_comprehensive_test(self):
         """Run all API tests in sequence"""
         print("=" * 60)
@@ -209,7 +439,12 @@ class ArchivaAPITester:
 
         # Print final summary
         self.print_summary()
-        return self.tests_passed == self.tests_run
+        
+        # Run RAG pipeline test separately
+        print("\n" + "🧠" * 20)
+        rag_success = self.run_rag_pipeline_test()
+        
+        return (self.tests_passed == self.tests_run) and rag_success
 
     def print_summary(self):
         """Print test results summary"""
