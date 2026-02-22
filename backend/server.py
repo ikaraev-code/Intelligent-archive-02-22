@@ -365,6 +365,7 @@ class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = ""
     file_ids: List[str] = []
+    summary: Optional[str] = None  # If provided, seeds the first assistant message in project chat
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
