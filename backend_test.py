@@ -801,6 +801,10 @@ These technologies are revolutionizing how we interact with data and make decisi
         print("\n📁 Testing new 'Save as Project' feature...")
         save_project_success = self.test_save_as_project_flow()
 
+        # Test PDF Export functionality
+        print("\n📄 Testing PDF Export feature...")
+        pdf_export_success = self.run_pdf_export_tests()
+
         # Print final summary
         self.print_summary()
         
@@ -808,7 +812,7 @@ These technologies are revolutionizing how we interact with data and make decisi
         print("\n" + "🧠" * 20)
         rag_success = self.run_rag_pipeline_test()
         
-        return (self.tests_passed == self.tests_run) and rag_success and save_project_success and append_success
+        return (self.tests_passed == self.tests_run) and rag_success and save_project_success and append_success and pdf_export_success
 
     def print_summary(self):
         """Print test results summary"""
