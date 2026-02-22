@@ -1509,9 +1509,12 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
     pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_page()
     
+    def safe_cell(w, h, txt="", **kwargs):
+        pdf.cell(w, h, txt=sanitize(txt), **kwargs)
+    
     # Title
     pdf.set_font("Helvetica", "B", 22)
-    pdf.cell(0, 12, txt=project.get("name", "Untitled Project"), new_x="LMARGIN", new_y="NEXT")
+    safe_cell(0, 12, txt=project.get("name", "Untitled Project"), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
     
     # Subtitle / description
