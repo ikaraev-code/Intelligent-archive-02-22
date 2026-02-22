@@ -3,7 +3,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ArrowLeft, BookOpen, FileText, Sparkles, FolderPlus, Loader2, Check } from "lucide-react";
 import { projectsAPI } from "../lib/api";
 import { toast } from "sonner";
@@ -23,47 +23,49 @@ function renderMarkdown(text) {
   return `<p class="mb-4 leading-relaxed">${html}</p>`;
 }
 
+function buildSummaryText(article, query) {
+  const parts = [];
+  if (query) parts.push(`Search query: "${query}"\n`);
+  if (article.key_points?.length > 0) {
+    parts.push("Key Points:");
+    article.key_points.forEach((p, i) => parts.push(`${i + 1}. ${p}`));
+    parts.push("");
+  }
+  if (article.content) parts.push(article.content);
+  if (article.sources?.length > 0) {
+    parts.push(`\nSources: ${article.sources.join(", ")}`);
+  }
+  return parts.join("\n");
+}
+
 export default function ArticlePage({ article, query, fileIds, onNavigate }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [savedProjectId, setSavedProjectId] = useState(null);
-  const [showNameInput, setShowNameInput] = useState(false);
-  const [projectName, setProjectName] = useState(article?.title || "");
+  const [showDialog, setShowDialog] = useState(false);
+  const [projectName, setProjectName] = useState("");
+
+  const openSaveDialog = () => {
+    setProjectName(article?.title || "Search Summary");
+    setShowDialog(true);
+  };
 
   const handleSaveAsProject = async () => {
-    if (!showNameInput) {
-      setProjectName(article?.title || "Search Summary");
-      setShowNameInput(true);
-      return;
-    }
-
     if (!projectName.trim()) {
       toast.error("Please enter a project name");
       return;
     }
-
     setSaving(true);
     try {
-      const description = [
-        query ? `Search query: "${query}"` : "",
-        "",
-        article.key_points?.length > 0
-          ? "Key Points:\n" + article.key_points.map((p, i) => `${i + 1}. ${p}`).join("\n")
-          : "",
-        "",
-        article.content || "",
-      ].filter(Boolean).join("\n");
-
-      const res = await projectsAPI.create({
+      const summaryText = buildSummaryText(article, query);
+      await projectsAPI.create({
         name: projectName.trim(),
-        description,
+        description: query ? `Summary from search: "${query}"` : "AI-generated summary",
         file_ids: fileIds || [],
+        summary: summaryText,
       });
-
       setSaved(true);
-      setSavedProjectId(res.data.id);
-      setShowNameInput(false);
-      toast.success("Project created successfully!");
+      setShowDialog(false);
+      toast.success("Project created with summary!");
     } catch (err) {
       toast.error("Failed to save project");
     } finally {
@@ -87,40 +89,23 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
           <ArrowLeft className="w-4 h-4" /> Back to Search
         </Button>
 
-        <div className="flex items-center gap-2">
-          {showNameInput && !saved && (
-            <div className="flex items-center gap-2 animate-in slide-in-from-right-4">
-              <Input
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Project name..."
-                className="h-9 w-64"
-                data-testid="project-name-input"
-                onKeyDown={(e) => e.key === "Enter" && handleSaveAsProject()}
-                autoFocus
-              />
-            </div>
-          )}
-          {saved ? (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="gap-2 text-green-600 border-green-200 bg-green-50" disabled data-testid="saved-indicator">
-                <Check className="w-4 h-4" /> Saved
-              </Button>
-              <Button className="gap-2" onClick={() => onNavigate("projects")} data-testid="go-to-project-btn">
-                <FolderPlus className="w-4 h-4" /> Open Projects
-              </Button>
-            </div>
-          ) : (
-            <Button onClick={handleSaveAsProject} disabled={saving} className="gap-2" data-testid="save-as-project-btn">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}
-              {showNameInput ? "Save" : "Save as Project"}
+        {saved ? (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="gap-1.5 text-green-600 border-green-200 bg-green-50 py-1 px-3">
+              <Check className="w-3.5 h-3.5" /> Saved
+            </Badge>
+            <Button onClick={() => onNavigate("projects")} className="gap-2" data-testid="go-to-project-btn">
+              <FolderPlus className="w-4 h-4" /> Open Projects
             </Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <Button onClick={openSaveDialog} className="gap-2" data-testid="save-as-project-btn">
+            <FolderPlus className="w-4 h-4" /> Save as Project
+          </Button>
+        )}
       </div>
 
       <article className="max-w-2xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-accent" />
@@ -141,7 +126,6 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
           )}
         </div>
 
-        {/* Key Points */}
         {article.key_points?.length > 0 && (
           <Card className="border border-border shadow-none mb-8 bg-[#FAFAF9]" data-testid="key-points">
             <CardContent className="p-6">
@@ -162,14 +146,12 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
           </Card>
         )}
 
-        {/* Content */}
         <div
           className="font-article text-lg leading-relaxed text-[#333333] prose-headings:font-sans"
           dangerouslySetInnerHTML={{ __html: renderMarkdown(article.content) }}
           data-testid="article-content"
         />
 
-        {/* Sources */}
         {article.sources?.length > 0 && (
           <div className="mt-12 pt-8 border-t border-border" data-testid="article-sources">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Sources</h3>
@@ -193,9 +175,8 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
                 <p className="text-sm text-muted-foreground mb-4">
                   Save the {fileIds.length} selected file{fileIds.length !== 1 ? "s" : ""} and this summary as a project so you don't lose it.
                 </p>
-                <Button onClick={handleSaveAsProject} disabled={saving} className="gap-2" data-testid="save-as-project-bottom-btn">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}
-                  {showNameInput ? "Save" : "Save as Project"}
+                <Button onClick={openSaveDialog} className="gap-2" data-testid="save-as-project-bottom-btn">
+                  <FolderPlus className="w-4 h-4" /> Save as Project
                 </Button>
               </CardContent>
             </Card>
@@ -219,6 +200,50 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
           </div>
         )}
       </article>
+
+      {/* Save as Project Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent data-testid="save-project-dialog">
+          <DialogHeader>
+            <DialogTitle>Save as Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Project Name</label>
+              <Input
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Project name..."
+                data-testid="project-name-input"
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && handleSaveAsProject()}
+              />
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">What will be saved:</p>
+              <div className="flex items-center gap-2 text-sm">
+                <FileText className="w-3.5 h-3.5 text-primary" />
+                <span>{fileIds?.length || 0} file{(fileIds?.length || 0) !== 1 ? "s" : ""} from your search</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span>AI summary with key points</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <BookOpen className="w-3.5 h-3.5 text-primary" />
+                <span>Full chat history to continue research</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveAsProject} disabled={saving} className="gap-2" data-testid="confirm-save-project-btn">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}
+              Create Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
