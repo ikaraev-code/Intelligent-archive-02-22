@@ -1467,6 +1467,170 @@ async def append_to_project(project_id: str, data: ProjectAppend, user=Depends(g
     updated["files_added"] = added_count
     return updated
 
+@api_router.get("/projects/{project_id}/export-pdf")
+async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
+    """Export project content (messages + file list) as a PDF"""
+    from fpdf import FPDF
+    import textwrap
+    
+    project = await db.projects.find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    messages = await db.project_messages.find(
+        {"project_id": project_id}, {"_id": 0}
+    ).sort("created_at", 1).to_list(5000)
+    
+    # Get file names
+    file_ids = project.get("file_ids", [])
+    files = []
+    if file_ids:
+        files = await db.files.find(
+            {"id": {"$in": file_ids}},
+            {"_id": 0, "original_filename": 1, "file_type": 1, "tags": 1}
+        ).to_list(1000)
+    
+    # Build PDF
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+    
+    # Title
+    pdf.set_font("Helvetica", "B", 22)
+    pdf.cell(0, 12, txt=project.get("name", "Untitled Project"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    
+    # Subtitle / description
+    desc = project.get("description", "")
+    if desc:
+        pdf.set_font("Helvetica", "I", 10)
+        pdf.set_text_color(100, 100, 100)
+        for line in textwrap.wrap(desc, width=90):
+            pdf.cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_text_color(0, 0, 0)
+    pdf.ln(4)
+    
+    # Metadata line
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(120, 120, 120)
+    meta = f"Files: {len(file_ids)}  |  Messages: {len(messages)}  |  Exported: {datetime.now(timezone.utc).strftime('%B %d, %Y')}"
+    pdf.cell(0, 5, txt=meta, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(2)
+    
+    # Divider
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(6)
+    
+    # Files section
+    if files:
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.cell(0, 8, txt="Source Files", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "", 10)
+        for i, f in enumerate(files):
+            name = f.get("original_filename", "Unknown")
+            ftype = f.get("file_type", "")
+            tags = ", ".join(f.get("tags", [])[:5])
+            bullet = f"{i+1}. {name}"
+            if ftype:
+                bullet += f"  ({ftype})"
+            pdf.cell(0, 6, txt=bullet, new_x="LMARGIN", new_y="NEXT")
+            if tags:
+                pdf.set_font("Helvetica", "I", 9)
+                pdf.set_text_color(100, 100, 100)
+                pdf.cell(0, 5, txt=f"   Tags: {tags}", new_x="LMARGIN", new_y="NEXT")
+                pdf.set_text_color(0, 0, 0)
+                pdf.set_font("Helvetica", "", 10)
+        pdf.ln(4)
+        pdf.set_draw_color(200, 200, 200)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(6)
+    
+    # Messages section
+    if messages:
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.cell(0, 8, txt="Conversation", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(3)
+        
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            
+            # Role label
+            if role == "assistant":
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.set_text_color(59, 130, 246)
+                pdf.cell(0, 6, txt="AI Archivist", new_x="LMARGIN", new_y="NEXT")
+            else:
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.set_text_color(30, 30, 30)
+                pdf.cell(0, 6, txt="You", new_x="LMARGIN", new_y="NEXT")
+            
+            pdf.set_text_color(40, 40, 40)
+            pdf.set_font("Helvetica", "", 10)
+            
+            # Process content - handle markdown-like formatting
+            clean = content.replace('\r\n', '\n').replace('\r', '\n')
+            for para in clean.split('\n'):
+                para = para.strip()
+                if not para:
+                    pdf.ln(2)
+                    continue
+                
+                # Detect headings (## )
+                if para.startswith('## '):
+                    pdf.set_font("Helvetica", "B", 11)
+                    for line in textwrap.wrap(para[3:], width=85):
+                        pdf.cell(0, 6, txt=line, new_x="LMARGIN", new_y="NEXT")
+                    pdf.set_font("Helvetica", "", 10)
+                elif para.startswith('# '):
+                    pdf.set_font("Helvetica", "B", 12)
+                    for line in textwrap.wrap(para[2:], width=80):
+                        pdf.cell(0, 7, txt=line, new_x="LMARGIN", new_y="NEXT")
+                    pdf.set_font("Helvetica", "", 10)
+                else:
+                    # Strip markdown bold/italic markers for PDF
+                    display = para.replace('**', '').replace('*', '')
+                    for line in textwrap.wrap(display, width=90):
+                        pdf.cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
+            
+            # Sources
+            sources = msg.get("sources", [])
+            if sources:
+                unique = list(dict.fromkeys(s.get("filename", s) if isinstance(s, dict) else s for s in sources))
+                pdf.set_font("Helvetica", "I", 8)
+                pdf.set_text_color(120, 120, 120)
+                pdf.cell(0, 5, txt=f"Sources: {', '.join(unique)}", new_x="LMARGIN", new_y="NEXT")
+                pdf.set_text_color(40, 40, 40)
+                pdf.set_font("Helvetica", "", 10)
+            
+            pdf.ln(4)
+    
+    # Footer
+    pdf.ln(6)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(150, 150, 150)
+    pdf.cell(0, 5, txt=f"Generated by Archiva - Intelligent Multimedia Archive", new_x="LMARGIN", new_y="NEXT")
+    
+    # Output
+    safe_name = re.sub(r'[^\w\s-]', '', project.get("name", "project")).strip().replace(' ', '_')[:50]
+    filename = f"{safe_name}.pdf"
+    pdf_bytes = pdf.output()
+    
+    return Response(
+        content=bytes(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Content-Type": "application/pdf"
+        }
+    )
+
 @api_router.delete("/projects/{project_id}")
 async def delete_project(project_id: str, user=Depends(get_current_user)):
     """Delete a project and all its messages"""
