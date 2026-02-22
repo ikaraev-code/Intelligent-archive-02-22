@@ -249,7 +249,7 @@ export default function ArticlePage({ article, query, fileIds, onNavigate }) {
 
       {/* Save to Project Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md" data-testid="save-project-dialog">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" data-testid="save-project-dialog">
           <DialogHeader>
             <DialogTitle>Save to Project</DialogTitle>
           </DialogHeader>
