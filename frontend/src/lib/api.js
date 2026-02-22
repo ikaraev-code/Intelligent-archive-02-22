@@ -75,6 +75,7 @@ export const projectsAPI = {
   list: () => api.get("/projects"),
   get: (id) => api.get(`/projects/${id}`),
   update: (id, data) => api.put(`/projects/${id}`, data),
+  append: (id, data) => api.post(`/projects/${id}/append`, data),
   delete: (id) => api.delete(`/projects/${id}`),
   getMessages: (id) => api.get(`/projects/${id}/messages`),
   chat: (id, message, includeFileContext = true) => 
