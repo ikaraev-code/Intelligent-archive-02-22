@@ -1473,6 +1473,20 @@ async def export_project_pdf(project_id: str, user=Depends(get_current_user)):
     from fpdf import FPDF
     import textwrap
     
+    def sanitize(text):
+        """Replace Unicode chars unsupported by Helvetica with ASCII equivalents"""
+        replacements = {
+            '\u2014': '-', '\u2013': '-', '\u2018': "'", '\u2019': "'",
+            '\u201c': '"', '\u201d': '"', '\u2026': '...', '\u2022': '-',
+            '\u00b7': '-', '\u2019': "'", '\u00a0': ' ', '\u200b': '',
+            '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u25cf': '-',
+            '\u2192': '->', '\u2190': '<-', '\u2794': '->', '\u00d7': 'x',
+        }
+        for k, v in replacements.items():
+            text = text.replace(k, v)
+        # Remove any remaining non-latin1 characters
+        return text.encode('latin-1', 'replace').decode('latin-1')
+    
     project = await db.projects.find_one({"id": project_id, "user_id": user["id"]})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
