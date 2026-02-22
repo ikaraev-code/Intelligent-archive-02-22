@@ -324,7 +324,6 @@ These technologies are revolutionizing how we interact with data and make decisi
             })
             print(f"    ❌ Summarization error: {str(e)}")
             return False
-        
         if not summarize_success:
             print("    ❌ Summarization failed")
             return False
