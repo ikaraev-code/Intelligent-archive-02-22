@@ -23,11 +23,13 @@ function formatSize(bytes) {
 
 export default function DashboardPage({ onNavigate }) {
   const [stats, setStats] = useState(null);
+  const [embeddingStats, setEmbeddingStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [previewFile, setPreviewFile] = useState(null);
 
   useEffect(() => {
     loadStats();
+    loadEmbeddingStats();
   }, []);
 
   const loadStats = async () => {
@@ -39,6 +41,13 @@ export default function DashboardPage({ onNavigate }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadEmbeddingStats = async () => {
+    try {
+      const res = await filesAPI.embeddingStats();
+      setEmbeddingStats(res.data);
+    } catch {}
   };
 
   if (loading) {
