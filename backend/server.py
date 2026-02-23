@@ -150,16 +150,16 @@ async def process_file_embeddings(file_id: str, content_text: str, filename: str
     """Process and store embeddings for a file's content using batch embedding for efficiency"""
     if not content_text and not tags:
         logger.info(f"No content to embed for file {file_id}")
-        await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "skipped"}})
+        await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "skipped", "embedding_error": "No text content to embed"}})
         return
     
     if not openai_client:
         logger.warning(f"OpenAI client not configured, skipping embeddings for {file_id}")
-        await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "disabled"}})
+        await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "disabled", "embedding_error": "AI service not configured"}})
         return
     
     # Mark as processing
-    await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "processing"}})
+    await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "processing", "embedding_error": None}})
     
     try:
         # Combine content with metadata for richer embeddings
@@ -169,7 +169,7 @@ async def process_file_embeddings(file_id: str, content_text: str, filename: str
         chunks = chunk_text(full_text)
         if not chunks:
             logger.info(f"No chunks created for file {file_id}")
-            await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "skipped"}})
+            await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "skipped", "embedding_error": "No text content to embed"}})
             return
         
         logger.info(f"Processing {len(chunks)} chunks for file {file_id}")
@@ -206,15 +206,25 @@ async def process_file_embeddings(file_id: str, content_text: str, filename: str
             logger.info(f"Created {len(embeddings_docs)} embeddings for file {file_id} ({filename})")
             await db.files.update_one({"id": file_id}, {"$set": {
                 "embedding_status": "completed",
-                "embedding_count": len(embeddings_docs)
+                "embedding_count": len(embeddings_docs),
+                "embedding_error": None
             }})
         else:
             logger.warning(f"No embeddings generated for file {file_id}")
-            await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "failed"}})
+            await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "failed", "embedding_error": "Embedding generation returned empty results"}})
             
     except Exception as e:
         logger.error(f"Error processing embeddings for {file_id}: {e}", exc_info=True)
-        await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "failed"}})
+        error_str = str(e)
+        if "401" in error_str or "api_key" in error_str.lower() or "unauthorized" in error_str.lower():
+            reason = "API key invalid or expired"
+        elif "429" in error_str or "rate" in error_str.lower():
+            reason = "Rate limit exceeded — try again shortly"
+        elif "timeout" in error_str.lower() or "timed out" in error_str.lower():
+            reason = "Request timed out — try again"
+        else:
+            reason = "Unexpected error during embedding"
+        await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "failed", "embedding_error": reason}})
 
 async def find_relevant_content(query: str, user_id: str, limit: int = 5) -> List[dict]:
     """Find most relevant content chunks for a query using cosine similarity"""
