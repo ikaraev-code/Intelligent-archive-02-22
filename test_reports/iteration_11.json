@@ -1,0 +1,58 @@
+{
+  "summary": "Dashboard Embedding Health widget fully tested. Widget displays donut chart with 100% indexed, Smart Search Health title with Brain icon, Fully Indexed green badge, and legend showing 'Indexed: 25'. Action link correctly hidden when all files are healthy. Backend API returning correct counts.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Frontend: Dashboard page loads with data-testid='dashboard-page'",
+    "Frontend: Embedding Health widget visible with data-testid='embedding-health'",
+    "Frontend: Widget shows donut chart SVG with '100%' and 'indexed' text",
+    "Frontend: Widget shows 'Smart Search Health' title with Brain icon",
+    "Frontend: Widget shows 'Fully Indexed' green badge when all files indexed",
+    "Frontend: Widget shows legend with 'Indexed: 25' count",
+    "Frontend: No 'Fix in Library' action link when everything is healthy (data-testid='embedding-health-action' correctly NOT present)",
+    "Backend: GET /api/files/embedding-stats returns correct counts (total=25, completed=25, failed=0, pending=0)",
+    "Frontend: Stats grid renders correctly (Total Files, Storage, Tags, Upload CTA cards)",
+    "Frontend: File Types section renders below embedding widget",
+    "Frontend: Popular Tags section renders correctly"
+  ],
+  "test_report_links": [
+    "/app/test_reports/iteration_11.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "EmbeddingHealthWidget component correctly receives stats from embeddingStats API",
+    "DonutChart component renders SVG segments with correct proportions based on completed/failed/pending/skipped",
+    "Status badge logic correctly determines 'Fully Indexed' when healthPct=100%",
+    "Action link (Fix in Library) correctly conditional on (failed > 0 || totalPending > 0)",
+    "data-testid attributes properly implemented for all key elements"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (embedding-stats API verified)",
+    "frontend": "100% (all widget elements verified)"
+  },
+  "test_credentials": "test@archiva.com / test123",
+  "seed_data_creation": "None - used existing 25 indexed files",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Dashboard Embedding Health widget verified. All 25 accessible files (22 owned + 3 public) are indexed. The widget correctly shows 100% indexed with green 'Fully Indexed' badge. The widget sits between the stats grid (4 cards) and the File Types/Popular Tags sections. When failed or pending > 0, the action link 'Fix in Library' should appear with data-testid='embedding-health-action'. Note: stats endpoint shows 22 total files (user-owned only) while embedding-stats shows 25 (includes public files) - this is expected behavior.",
+  "feature_verification": {
+    "embedding_health_widget": "data-testid='embedding-health' - WORKING",
+    "donut_chart": "SVG donut with 100% indexed text - WORKING",
+    "smart_search_health_title": "Brain icon + 'Smart Search Health' title - WORKING",
+    "fully_indexed_badge": "Green badge showing 'Fully Indexed' - WORKING",
+    "indexed_count_legend": "Legend showing 'Indexed: 25' - WORKING",
+    "action_link_hidden": "data-testid='embedding-health-action' correctly NOT present when all healthy - WORKING",
+    "backend_embedding_stats": "GET /api/files/embedding-stats returns correct breakdown - WORKING",
+    "stats_grid": "4 cards (Total Files, Storage, Tags, Upload CTA) - WORKING",
+    "file_types_section": "data-testid='type-breakdown' - WORKING",
+    "popular_tags_section": "data-testid='top-tags' - WORKING"
+  }
+}
