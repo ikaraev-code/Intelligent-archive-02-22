@@ -215,6 +215,8 @@ export default function AIChatPage() {
     
     if (uploaded.length > 0) {
       const names = uploaded.map(u => u.name).join(", ");
+      const newIds = uploaded.map(u => u.id);
+      setRecentFileIds(prev => [...prev, ...newIds]);
       toast.success(`${uploaded.length} file${uploaded.length > 1 ? "s" : ""} uploaded`);
       setMessages(prev => [...prev, {
         role: "assistant",
