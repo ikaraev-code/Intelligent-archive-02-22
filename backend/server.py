@@ -1502,6 +1502,7 @@ async def update_project(project_id: str, data: ProjectUpdate, user=Depends(get_
             {"id": 1}
         ).to_list(1000)
         update_fields["file_ids"] = [f["id"] for f in valid_files]
+        update_fields["status"] = "active" if update_fields["file_ids"] else "inactive"
     
     await db.projects.update_one({"id": project_id}, {"$set": update_fields})
     
