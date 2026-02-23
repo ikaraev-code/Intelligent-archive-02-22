@@ -926,16 +926,25 @@ export default function ProjectsPage() {
             {projects.map((project) => (
               <Card
                 key={project.id}
-                className="border border-border shadow-none hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+                className={`border shadow-none hover:shadow-sm transition-all cursor-pointer group ${
+                  project.status === "inactive" ? "border-amber-200 bg-amber-50/30 opacity-75" : "border-border hover:border-primary/30"
+                }`}
                 onClick={() => openProject(project)}
                 data-testid={`project-card-${project.id}`}
               >
                 <CardContent className="p-3 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <FolderOpen className="w-4 h-4 text-primary" />
+                  <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
+                    project.status === "inactive" ? "bg-amber-100" : "bg-primary/10"
+                  }`}>
+                    <FolderOpen className={`w-4 h-4 ${project.status === "inactive" ? "text-amber-600" : "text-primary"}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm truncate">{project.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-sm truncate">{project.name}</h3>
+                      {project.status === "inactive" && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium flex-shrink-0">Inactive</span>
+                      )}
+                    </div>
                     {project.description && (
                       <p className="text-[11px] text-muted-foreground truncate">{project.description}</p>
                     )}
