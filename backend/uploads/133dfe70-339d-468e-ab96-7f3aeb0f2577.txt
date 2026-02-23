@@ -1,0 +1,1 @@
+Test file content for embedding status indicator verification in AI Archivist page.
