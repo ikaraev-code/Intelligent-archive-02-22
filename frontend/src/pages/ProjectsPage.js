@@ -42,6 +42,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Cpu,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
