@@ -123,6 +123,7 @@ export default function LibraryPage({ onNavigate, initialTag }) {
             reindexIntervalRef.current = null;
             setReindexing(false);
             loadEmbeddingStatus();
+            loadEmbeddingStats();
             if (prog.data.status === "completed") {
               toast.success(`Reindex complete! ${prog.data.processed}/${prog.data.total} files processed`);
             } else {
