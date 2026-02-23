@@ -130,6 +130,57 @@ export default function AIChatPage() {
     }]);
   }, []);
 
+  // Poll embedding status for pending files
+  useEffect(() => {
+    const pendingIds = pendingFiles
+      .filter(f => f.id && f.embeddingStatus !== "completed" && f.embeddingStatus !== "failed" && f.embeddingStatus !== "skipped" && f.embeddingStatus !== "disabled" && f.uploadStatus !== "error")
+      .map(f => f.id);
+    
+    if (pendingIds.length === 0) {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        const res = await filesAPI.batchStatus(pendingIds);
+        const statusMap = {};
+        for (const s of res.data.statuses) {
+          statusMap[s.id] = s.embedding_status;
+        }
+        setPendingFiles(prev => prev.map(f => {
+          if (f.id && statusMap[f.id]) {
+            return { ...f, embeddingStatus: statusMap[f.id] };
+          }
+          return f;
+        }));
+      } catch {}
+    };
+
+    poll();
+    pollIntervalRef.current = setInterval(poll, 3000);
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [pendingFiles.map(f => `${f.id}:${f.embeddingStatus}`).join(",")]);
+
+  // Auto-dismiss fully completed files after 5s
+  useEffect(() => {
+    const allDone = pendingFiles.length > 0 && pendingFiles.every(f =>
+      f.uploadStatus === "error" || f.embeddingStatus === "completed" || f.embeddingStatus === "failed" || f.embeddingStatus === "skipped" || f.embeddingStatus === "disabled"
+    );
+    if (allDone) {
+      const timer = setTimeout(() => setPendingFiles([]), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingFiles]);
+
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
