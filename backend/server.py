@@ -1103,11 +1103,43 @@ async def delete_file(file_id: str, user=Depends(get_current_user)):
     file_doc = await db.files.find_one({"id": file_id, "user_id": user["id"]}, {"_id": 0})
     if not file_doc:
         raise HTTPException(status_code=404, detail="File not found")
+    
+    # Delete physical file
     file_path = UPLOAD_DIR / file_doc["stored_filename"]
     if file_path.exists():
         file_path.unlink()
+    
+    # Delete embeddings for this file
+    deleted_embeddings = await db.embeddings.delete_many({"file_id": file_id})
+    
+    # Remove file ID from all projects that reference it
+    affected_projects = await db.projects.find(
+        {"file_ids": file_id, "user_id": user["id"]},
+        {"_id": 0, "id": 1, "name": 1, "file_ids": 1}
+    ).to_list(100)
+    
+    affected_info = []
+    for proj in affected_projects:
+        new_file_ids = [fid for fid in proj["file_ids"] if fid != file_id]
+        update_fields = {"file_ids": new_file_ids, "updated_at": datetime.now(timezone.utc).isoformat()}
+        if len(new_file_ids) == 0:
+            update_fields["status"] = "inactive"
+        await db.projects.update_one({"id": proj["id"]}, {"$set": update_fields})
+        affected_info.append({
+            "id": proj["id"],
+            "name": proj["name"],
+            "remaining_files": len(new_file_ids),
+            "became_inactive": len(new_file_ids) == 0
+        })
+    
+    # Delete file document
     await db.files.delete_one({"id": file_id})
-    return {"message": "File deleted"}
+    
+    return {
+        "message": "File deleted",
+        "embeddings_removed": deleted_embeddings.deleted_count,
+        "affected_projects": affected_info
+    }
 
 @api_router.post("/files/summarize")
 async def summarize_files(data: SummarizeRequest, user=Depends(get_current_user)):
