@@ -104,7 +104,9 @@ export default function AIChatPage() {
   // File upload state
   const [uploading, setUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+  const dragCounter = useRef(0);
   
   const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
