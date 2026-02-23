@@ -21,6 +21,147 @@ function formatSize(bytes) {
   return (bytes / 1073741824).toFixed(2) + " GB";
 }
 
+function DonutChart({ completed, failed, pending, skipped, total }) {
+  const size = 100;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  
+  const pctCompleted = total > 0 ? completed / total : 0;
+  const pctFailed = total > 0 ? failed / total : 0;
+  const pctPending = total > 0 ? pending / total : 0;
+  const pctSkipped = total > 0 ? skipped / total : 0;
+  
+  const segments = [
+    { pct: pctCompleted, color: "#22c55e" },
+    { pct: pctFailed, color: "#ef4444" },
+    { pct: pctPending, color: "#f59e0b" },
+    { pct: pctSkipped, color: "#d1d5db" },
+  ];
+  
+  let offset = 0;
+  
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
+      {segments.map((seg, i) => {
+        const dashLength = seg.pct * circumference;
+        const dashOffset = -offset * circumference;
+        offset += seg.pct;
+        if (seg.pct === 0) return null;
+        return (
+          <circle
+            key={i}
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            className="transition-all duration-700"
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+function EmbeddingHealthWidget({ stats, onNavigate }) {
+  const { total, completed, failed, pending, processing, skipped, none } = stats;
+  const totalPending = pending + processing;
+  const totalSkipped = skipped + (none || 0);
+  const healthPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  
+  let statusColor = "text-green-600";
+  let statusBg = "bg-green-50 border-green-100";
+  let statusLabel = "Fully Indexed";
+  let statusIcon = <CheckCircle2 className="w-4 h-4" />;
+  
+  if (healthPct < 50) {
+    statusColor = "text-red-600";
+    statusBg = "bg-red-50 border-red-100";
+    statusLabel = "Needs Attention";
+    statusIcon = <AlertCircle className="w-4 h-4" />;
+  } else if (healthPct < 100) {
+    statusColor = "text-amber-600";
+    statusBg = "bg-amber-50 border-amber-100";
+    statusLabel = failed > 0 ? `${failed} Failed` : "In Progress";
+    statusIcon = failed > 0 ? <AlertCircle className="w-4 h-4" /> : <Brain className="w-4 h-4" />;
+  }
+  
+  return (
+    <Card className="border border-border shadow-none overflow-hidden" data-testid="embedding-health">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-6">
+          {/* Donut */}
+          <div className="relative flex-shrink-0">
+            <DonutChart completed={completed} failed={failed} pending={totalPending} skipped={totalSkipped} total={total} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold">{healthPct}%</span>
+              <span className="text-[10px] text-muted-foreground">indexed</span>
+            </div>
+          </div>
+          
+          {/* Details */}
+          <div className="flex-1 min-w-0 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-purple-600" />
+                  Smart Search Health
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{completed} of {total} files ready for AI search</p>
+              </div>
+              <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${statusBg} ${statusColor}`}>
+                {statusIcon}
+                {statusLabel}
+              </span>
+            </div>
+            
+            {/* Legend */}
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-500" /> Indexed: {completed}
+              </span>
+              {failed > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500" /> Failed: {failed}
+                </span>
+              )}
+              {totalPending > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Pending: {totalPending}
+                </span>
+              )}
+              {totalSkipped > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-gray-300" /> Skipped: {totalSkipped}
+                </span>
+              )}
+            </div>
+            
+            {/* Action link if issues exist */}
+            {(failed > 0 || totalPending > 0) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-2 -ml-2"
+                onClick={() => onNavigate("library")}
+                data-testid="embedding-health-action"
+              >
+                {failed > 0 ? "Fix in Library" : "View progress"} <ArrowRight className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardPage({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [embeddingStats, setEmbeddingStats] = useState(null);
