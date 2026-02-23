@@ -36,6 +36,8 @@ export default function LibraryPage({ onNavigate, initialTag }) {
 
   // Embedding reindex state
   const [embeddingStatus, setEmbeddingStatus] = useState(null);
+  const [embeddingStats, setEmbeddingStats] = useState(null);
+  const [showReindexPanel, setShowReindexPanel] = useState(false);
   const [reindexing, setReindexing] = useState(false);
   const [reindexProgress, setReindexProgress] = useState(null);
   const reindexIntervalRef = useRef(null);
