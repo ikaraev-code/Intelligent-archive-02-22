@@ -1763,6 +1763,7 @@ async def project_chat(project_id: str, data: ProjectChatRequest, user=Depends(g
         
         # Build system message scoped to project
         file_list_parts = []
+        file_content_parts = []
         if file_ids:
             project_files = await db.files.find(
                 {"id": {"$in": file_ids}},
@@ -1771,16 +1772,25 @@ async def project_chat(project_id: str, data: ProjectChatRequest, user=Depends(g
             for f in project_files:
                 tags = ", ".join(f.get("tags", [])[:5]) if f.get("tags") else "no tags"
                 file_list_parts.append(f"- {f['original_filename']} ({f['file_type']}): tags=[{tags}]")
+                # Include actual content so AI can always answer about files
+                ct = f.get("content_text", "")
+                if ct:
+                    file_content_parts.append(f"=== {f['original_filename']} ===\n{ct[:3000]}")
+        
+        file_content_section = ""
+        if file_content_parts:
+            file_content_section = "\n\nFILE CONTENTS (use this to answer questions about the files):\n" + "\n\n".join(file_content_parts)
         
         system_message = f"""You are the AI Archivist working on the project "{project['name']}".
 {f'Project description: {project["description"]}' if project.get("description") else ''}
 
 This project has {len(file_ids)} selected file(s):
 {chr(10).join(file_list_parts) if file_list_parts else 'No files selected yet.'}
+{file_content_section}
 
 You help the user analyze, summarize, and discuss the content of these project files.
 Be helpful, concise, and always cite which file the information comes from.
-When answering questions about file content, use the RELEVANT CONTENT section below."""
+When answering questions about file content, use the FILE CONTENTS and RELEVANT CONTENT sections."""
 
         # Get RAG context scoped to project files
         rag_context, rag_sources = await get_project_rag_context(data.message, file_ids)
