@@ -38,6 +38,7 @@ import {
   Grid3X3,
   List,
   Download,
+  Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 
