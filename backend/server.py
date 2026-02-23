@@ -1477,6 +1477,8 @@ async def get_project(project_id: str, user=Depends(get_current_user)):
     project["file_count"] = len(project.get("files", []))
     msg_count = await db.project_messages.count_documents({"project_id": project_id})
     project["message_count"] = msg_count
+    if "status" not in project:
+        project["status"] = "inactive" if project["file_count"] == 0 else "active"
     
     return project
 
