@@ -15,6 +15,7 @@ Rebuild an application from GitHub repository `https://github.com/ikaraev-code/I
 9. **Priority File Search** - recently uploaded files boosted in AI Archivist RAG
 10. **Unique Test IDs** - desktop/mobile sidebar have distinct data-testid attributes
 11. **RAG Source Deduplication** - sources array has unique file entries, deleted files skipped
+12. **Batch Re-indexing** - Library panel with stats breakdown + filtered re-index (all/failed/unindexed)
 
 ## Tech Stack
 - Frontend: React + Tailwind CSS + shadcn/ui
@@ -47,26 +48,25 @@ Rebuild an application from GitHub repository `https://github.com/ikaraev-code/I
 - **projects**: {id, user_id, name, description, file_ids[], status}
 - **project_messages**: {id, project_id, role, content, sources[]}
 
-## Completed Features
+## Completed Features (All Tested)
 - [x] App rebuild from GitHub
 - [x] OpenAI RAG pipeline (embeddings + semantic search + AI chat)
 - [x] Save/Append search to project
 - [x] PDF export (from project view + card)
-- [x] File upload in chat (click + drag-and-drop, both AI Archivist + Project chat)
-- [x] Immediate content access bug fix (fallback for new files)
-- [x] Real-time Embedding Status Indicators (Feb 23, 2026)
-- [x] Retry button + descriptive failure messages for embedding errors
-- [x] Cascade file delete (embeddings + project cleanup + inactive status) (Feb 23, 2026)
-- [x] P1: Priority file search — recently uploaded files boosted in RAG (Feb 23, 2026)
-- [x] P2: Unique data-testid for desktop/mobile sidebar navigation (Feb 23, 2026)
-- [x] P3: RAG source deduplication + deleted file skip (Feb 23, 2026)
+- [x] File upload in chat (click + drag-and-drop)
+- [x] Immediate content access bug fix
+- [x] P0: Embedding status indicators with retry + error messages (Feb 23)
+- [x] Cascade file delete with project inactive status (Feb 23)
+- [x] P1: Priority file search in AI Archivist (Feb 23)
+- [x] P2: Unique data-testid for desktop/mobile sidebar (Feb 23)
+- [x] P3: RAG source deduplication + deleted file skip (Feb 23)
+- [x] Batch Re-indexing UI with stats + filtered reindex (Feb 23)
 
-## Pending / Future Tasks
+## Future / Backlog
 - Test with diverse file types (PDF, DOCX, images)
-- Batch re-indexing UI
 - Project comparison view
 - Optionally clear project chat history when files are removed
-- Chat history cleanup for deleted file references
+- Smart Collections (AI auto-groups related files into suggested projects)
 
 ## Credentials
 - Test user: test@archiva.com / test123
