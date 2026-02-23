@@ -149,7 +149,7 @@ export default function AIChatPage() {
         const res = await filesAPI.batchStatus(pendingIds);
         const statusMap = {};
         for (const s of res.data.statuses) {
-          statusMap[s.id] = { embeddingStatus: s.embedding_status, hasText: s.has_text, fileType: s.file_type };
+          statusMap[s.id] = { embeddingStatus: s.embedding_status, hasText: s.has_text, fileType: s.file_type, embeddingError: s.embedding_error };
         }
         setPendingFiles(prev => prev.map(f => {
           if (f.id && statusMap[f.id]) {
