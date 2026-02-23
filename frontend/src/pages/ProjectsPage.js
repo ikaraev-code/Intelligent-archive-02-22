@@ -217,10 +217,11 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
   
   // File upload state
   const [uploading, setUploading] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState([]);
+  const [pendingFiles, setPendingFiles] = useState([]); // {id, name, uploadStatus, embeddingStatus}
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
   const dragCounter = useRef(0);
+  const pollIntervalRef = useRef(null);
   
   const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
