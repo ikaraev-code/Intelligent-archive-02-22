@@ -1,30 +1,70 @@
 # Archiva - Intelligent Multimedia Archive
 
 ## Original Problem Statement
-Rebuild Archiva from GitHub. Integrate OpenAI RAG. Save/append search summaries to projects. Export projects as PDF. Attach files from chat.
+Rebuild an application from GitHub repository `https://github.com/ikaraev-code/Intelligent-archive` and extend it with AI-powered features.
+
+## Core Requirements
+1. **Rebuild App** from GitHub repo
+2. **OpenAI RAG Integration** - auto-tagging, embeddings, semantic search, AI chat
+3. **Save Search to Project** - save search results + summary as new project
+4. **Append Search to Project** - append to existing project
+5. **Export Project to PDF** - full project export
+6. **File Upload in Chat** - paperclip button + drag-and-drop in both chat interfaces
+7. **Embedding Status Indicators** - real-time visual feedback on file upload/embedding lifecycle
+
+## Tech Stack
+- Frontend: React + Tailwind CSS + shadcn/ui
+- Backend: FastAPI + Motor (async MongoDB)
+- Database: MongoDB
+- AI: OpenAI (text-embedding-3-small for embeddings, GPT-5.2 via Emergent LLM key for chat)
+- PDF: fpdf2
 
 ## Architecture
-- Frontend: React.js + Tailwind CSS + shadcn/ui + Framer Motion
-- Backend: FastAPI + JWT auth + fpdf2 (PDF generation)
-- Database: MongoDB
-- AI: OpenAI text-embedding-3-small (embeddings), Emergent LLM key (GPT chat & tagging)
+```
+/app/
+├── backend/
+│   ├── .env (MONGO_URL, DB_NAME, EMERGENT_LLM_KEY, OPENAI_API_KEY)
+│   ├── requirements.txt
+│   ├── server.py (all API logic)
+│   └── uploads/
+└── frontend/
+    ├── .env (REACT_APP_BACKEND_URL)
+    ├── src/
+    │   ├── components/ (ui/, layout/)
+    │   ├── lib/api.js (all API calls)
+    │   ├── pages/ (Dashboard, Upload, Library, Search, AIChatPage, ProjectsPage, ArticlePage)
+    │   └── App.js
+```
 
-## What's Been Implemented
-### Session 1 - Feb 22, 2026
-1. Full rebuild from GitHub
-2. OpenAI RAG pipeline (upload -> AI tagging -> embeddings -> semantic search -> AI chat)
-3. Save to Project from search summaries
-4. Append to Existing Project (two-tab dialog)
-5. Export Project as PDF
-6. Quick PDF export from project cards
+## Key DB Collections
+- **users**: {id, email, name, password_hash}
+- **files**: {id, user_id, original_filename, content_text, tags[], embedding_status, embedding_count}
+- **embeddings**: {id, file_id, chunk_index, chunk_text, embedding[]}
+- **projects**: {id, user_id, name, description, file_ids[]}
+- **project_messages**: {id, project_id, role, content, sources[]}
 
-### Session 2 - Feb 23, 2026
-7. **Attach files from chat** — Paperclip icon in AI Archivist and Project chat inputs. Uploads files, auto-tags, generates embeddings. In Project chat, also appends files to the project. Shows upload progress chips.
+## Completed Features
+- [x] App rebuild from GitHub
+- [x] OpenAI RAG pipeline (embeddings + semantic search + AI chat)
+- [x] Save/Append search to project
+- [x] PDF export (from project view + card)
+- [x] File upload in chat (click + drag-and-drop, both AI Archivist + Project chat)
+- [x] Immediate content access bug fix (fallback for new files)
+- [x] **Real-time Embedding Status Indicators** (Feb 23, 2026)
+  - Backend: GET /api/files/batch-status endpoint
+  - Frontend: Colored status chips (blue=uploading, amber=embedding, green=ready, red=failed)
+  - Polling every 3s, auto-dismiss 5s after completion
+  - Implemented in both AIChatPage.js and ProjectsPage.js
 
-## GitHub Repo
-https://github.com/ikaraev-code/intelligent-archive-02-22
+## Pending Tasks (Priority Order)
+- P1: Prioritize newly attached files in AI Archivist search
+- P2: Fix duplicate data-testid attributes in navigation (recurring test issue)
+- P3: Investigate flaky RAG source issue
 
-## Backlog
-- P1: Test with diverse file types (PDF, DOCX, images)
-- P2: Batch re-indexing UI
-- P2: Comparison view between projects
+## Future/Backlog
+- Test with diverse file types (PDF, DOCX, images)
+- Batch re-indexing UI
+- Project comparison view
+
+## Credentials
+- Test user: test@archiva.com / test123
