@@ -679,14 +679,53 @@ async def get_all_tags(user=Depends(get_current_user)):
     tags = await db.files.aggregate(pipeline).to_list(200)
     return [{"tag": t["_id"], "count": t["count"]} for t in tags]
 
+@api_router.get("/files/embedding-stats")
+async def get_embedding_stats(user=Depends(get_current_user)):
+    """Get a breakdown of embedding statuses for user's files"""
+    user_filter = {"$or": [{"user_id": user["id"]}, {"is_public": True}]}
+    total = await db.files.count_documents(user_filter)
+    
+    pipeline = [
+        {"$match": user_filter},
+        {"$group": {"_id": "$embedding_status", "count": {"$sum": 1}}}
+    ]
+    status_counts = {}
+    async for doc in db.files.aggregate(pipeline):
+        status_counts[doc["_id"] or "none"] = doc["count"]
+    
+    # Get files that failed or have no embeddings for the detail list
+    problem_files = await db.files.find(
+        {**user_filter, "embedding_status": {"$in": ["failed", "skipped", "disabled", "pending", None]}},
+        {"_id": 0, "id": 1, "original_filename": 1, "embedding_status": 1, "embedding_error": 1, "file_type": 1, "upload_date": 1}
+    ).to_list(500)
+    
+    return {
+        "total": total,
+        "completed": status_counts.get("completed", 0),
+        "processing": status_counts.get("processing", 0),
+        "pending": status_counts.get("pending", 0),
+        "failed": status_counts.get("failed", 0),
+        "skipped": status_counts.get("skipped", 0),
+        "disabled": status_counts.get("disabled", 0),
+        "none": status_counts.get("none", 0),
+        "problem_files": problem_files
+    }
+
+
 @api_router.post("/files/reindex")
-async def reindex_embeddings(user=Depends(get_current_user)):
-    """Start background reindex of embeddings for all files"""
+async def reindex_embeddings(user=Depends(get_current_user), filter: str = "all"):
+    """Start background reindex of embeddings. Filter: all, failed, unindexed"""
     if not openai_client:
         raise HTTPException(status_code=503, detail="AI embedding service not configured")
     
+    user_filter = {"$or": [{"user_id": user["id"]}, {"is_public": True}]}
+    if filter == "failed":
+        user_filter["embedding_status"] = {"$in": ["failed"]}
+    elif filter == "unindexed":
+        user_filter["embedding_status"] = {"$in": ["failed", "skipped", "disabled", "pending", None]}
+    
     files = await db.files.find(
-        {"$or": [{"user_id": user["id"]}, {"is_public": True}]},
+        user_filter,
         {"_id": 0, "id": 1, "original_filename": 1, "content_text": 1, "tags": 1}
     ).to_list(1000)
     
@@ -711,6 +750,11 @@ async def reindex_embeddings(user=Depends(get_current_user)):
                     if content_text or f.get("tags"):
                         await process_file_embeddings(
                             f["id"], content_text, f["original_filename"], f.get("tags", [])
+                        )
+                    else:
+                        await db.files.update_one(
+                            {"id": f["id"]},
+                            {"$set": {"embedding_status": "skipped", "embedding_error": "No text content to embed"}}
                         )
                     reindex_tasks[task_id]["processed"] = i + 1
                 except Exception as e:
