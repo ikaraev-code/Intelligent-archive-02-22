@@ -365,6 +365,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
     include_file_context: bool = True
+    priority_file_ids: Optional[List[str]] = None
 
 class TTSRequest(BaseModel):
     text: str
