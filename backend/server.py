@@ -792,9 +792,36 @@ async def get_batch_file_status(ids: str = "", user=Depends(get_current_user)):
         return {"statuses": []}
     files = await db.files.find(
         {"id": {"$in": file_ids}, "$or": [{"user_id": user["id"]}, {"is_public": True}]},
-        {"_id": 0, "id": 1, "original_filename": 1, "embedding_status": 1, "embedding_count": 1}
+        {"_id": 0, "id": 1, "original_filename": 1, "embedding_status": 1, "embedding_count": 1, "file_type": 1, "content_text": 1}
     ).to_list(100)
+    # Add has_text flag and strip content_text from response
+    for f in files:
+        f["has_text"] = bool(f.get("content_text"))
+        f.pop("content_text", None)
     return {"statuses": files}
+
+
+@api_router.post("/files/{file_id}/retry-embedding")
+async def retry_file_embedding(file_id: str, user=Depends(get_current_user)):
+    """Retry embedding generation for a file that failed or was skipped"""
+    file_doc = await db.files.find_one(
+        {"id": file_id, "$or": [{"user_id": user["id"]}, {"is_public": True}]},
+        {"_id": 0}
+    )
+    if not file_doc:
+        raise HTTPException(status_code=404, detail="File not found")
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI embedding service not configured")
+    # Reset status to pending and re-trigger
+    await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "pending"}})
+    import asyncio
+    asyncio.create_task(process_file_embeddings(
+        file_id,
+        file_doc.get("content_text", ""),
+        file_doc.get("original_filename", ""),
+        file_doc.get("tags", [])
+    ))
+    return {"message": "Embedding retry started", "file_id": file_id, "embedding_status": "pending"}
 
 
 @api_router.get("/files/search")

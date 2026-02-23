@@ -44,6 +44,7 @@ export const filesAPI = {
   smartSearch: (params) => api.get("/files/smart-search", { params }),
   embeddingStatus: () => api.get("/files/embedding-status"),
   batchStatus: (ids) => api.get("/files/batch-status", { params: { ids: ids.join(",") } }),
+  retryEmbedding: (id) => api.post(`/files/${id}/retry-embedding`),
   reindex: () => api.post("/files/reindex"),
   reindexProgress: (taskId) => api.get(`/files/reindex-progress/${taskId}`),
   stats: () => api.get("/files/stats"),
