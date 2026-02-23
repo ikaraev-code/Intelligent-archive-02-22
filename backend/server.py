@@ -1828,24 +1828,30 @@ async def get_project_rag_context(query: str, file_ids: List[str]) -> tuple:
         context_parts = ["Relevant content from the project files (cite source file names when using this):"]
         sources = []
         seen_files = set()
+        seen_source_files = set()
         
         for chunk in top_results:
             file_doc = await db.files.find_one({"id": chunk["file_id"]}, {"original_filename": 1, "file_type": 1, "id": 1})
-            filename = file_doc.get("original_filename", "Unknown") if file_doc else "Unknown"
-            file_type = file_doc.get("file_type", "document") if file_doc else "document"
+            if not file_doc:
+                continue
+            filename = file_doc.get("original_filename", "Unknown")
+            file_type = file_doc.get("file_type", "document")
             
             if chunk["file_id"] not in seen_files:
                 context_parts.append(f"\n--- From: {filename} (relevance: {chunk['similarity']:.2f}) ---")
                 seen_files.add(chunk["file_id"])
             
             context_parts.append(chunk["chunk_text"])
-            sources.append({
-                "file_id": chunk["file_id"],
-                "filename": filename,
-                "file_type": file_type,
-                "passage": chunk["chunk_text"][:300],
-                "relevance": round(chunk["similarity"], 2)
-            })
+            
+            if chunk["file_id"] not in seen_source_files:
+                sources.append({
+                    "file_id": chunk["file_id"],
+                    "filename": filename,
+                    "file_type": file_type,
+                    "passage": chunk["chunk_text"][:300],
+                    "relevance": round(chunk["similarity"], 2)
+                })
+                seen_source_files.add(chunk["file_id"])
         
         return "\n".join(context_parts), sources
         
