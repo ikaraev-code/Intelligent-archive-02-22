@@ -164,6 +164,25 @@ export default function AIChatPage() {
     setTimeout(() => setPendingFiles([]), 3000);
   };
 
+  const handleDragEnter = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items?.length) setIsDragging(true);
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  };
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
+  const handleDrop = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+    const files = e.dataTransfer.files;
+    if (files?.length) handleFileUpload({ target: { files, value: "" } });
+  };
+
   const sendMessage = async (text = input) => {
     if (!text.trim()) return;
     
