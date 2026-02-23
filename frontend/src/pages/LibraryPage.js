@@ -246,51 +246,151 @@ export default function LibraryPage({ onNavigate, initialTag }) {
         <p className="text-muted-foreground text-base">Browse and manage your archived files</p>
       </div>
 
-      {/* Embedding Status & Reindex */}
+      {/* Embedding Status & Reindex Panel */}
       {embeddingStatus && embeddingStatus.status === "enabled" && (
-        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-100">
-          <Brain className="w-4 h-4 text-purple-600 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            {reindexProgress ? (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium">
-                    {reindexProgress.status === "completed" ? "Reindex complete!" : 
-                     `Indexing${reindexProgress.current_file ? `: ${reindexProgress.current_file}` : '...'}`}
-                  </span>
+        <div className="rounded-lg border border-purple-100 overflow-hidden" data-testid="embedding-panel">
+          {/* Summary Bar */}
+          <div 
+            className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 cursor-pointer hover:from-purple-100/50 hover:to-blue-100/50 transition-colors"
+            onClick={() => { if (!showReindexPanel) loadEmbeddingStats(); setShowReindexPanel(!showReindexPanel); }}
+            data-testid="embedding-panel-toggle"
+          >
+            <Brain className="w-4 h-4 text-purple-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              {reindexProgress ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium">
+                      {reindexProgress.status === "completed" ? "Reindex complete!" : 
+                       `Indexing${reindexProgress.current_file ? `: ${reindexProgress.current_file}` : '...'}`}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {reindexProgress.processed}/{reindexProgress.total}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={reindexProgress.total > 0 ? (reindexProgress.processed / reindexProgress.total) * 100 : 0} 
+                    className="h-2"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground">
-                    {reindexProgress.processed}/{reindexProgress.total}
+                    Smart Search: <span className="font-medium text-foreground">{embeddingStatus.files_with_embeddings}/{embeddingStatus.total_files}</span> files indexed
+                    {embeddingStatus.total_embeddings > 0 && ` · ${embeddingStatus.total_embeddings} embeddings`}
                   </span>
                 </div>
-                <Progress 
-                  value={reindexProgress.total > 0 ? (reindexProgress.processed / reindexProgress.total) * 100 : 0} 
-                  className="h-2"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">
-                  Smart Search: <span className="font-medium text-foreground">{embeddingStatus.files_with_embeddings}/{embeddingStatus.total_files}</span> files indexed
-                  {embeddingStatus.total_embeddings > 0 && ` · ${embeddingStatus.total_embeddings} embeddings`}
-                </span>
-              </div>
-            )}
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {showReindexPanel ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+            </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 flex-shrink-0 h-8 text-xs"
-            onClick={startReindex}
-            disabled={reindexing}
-            data-testid="reindex-btn"
-          >
-            {reindexing ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3 h-3" />
-            )}
-            {reindexing ? "Indexing..." : "Reindex All"}
-          </Button>
+
+          {/* Expanded Panel */}
+          {showReindexPanel && (
+            <div className="p-4 border-t border-purple-100 bg-white space-y-4" data-testid="reindex-panel">
+              {/* Status Breakdown */}
+              {embeddingStats && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-green-50 border border-green-100">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                    <div>
+                      <p className="text-lg font-bold text-green-700">{embeddingStats.completed}</p>
+                      <p className="text-[10px] text-green-600">Indexed</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-red-50 border border-red-100">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+                    <div>
+                      <p className="text-lg font-bold text-red-700">{embeddingStats.failed}</p>
+                      <p className="text-[10px] text-red-600">Failed</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-gray-50 border border-gray-100">
+                    <FileText className="w-3.5 h-3.5 text-gray-500" />
+                    <div>
+                      <p className="text-lg font-bold text-gray-700">{embeddingStats.skipped + (embeddingStats.none || 0)}</p>
+                      <p className="text-[10px] text-gray-500">Skipped</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-amber-50 border border-amber-100">
+                    <Loader2 className="w-3.5 h-3.5 text-amber-600" />
+                    <div>
+                      <p className="text-lg font-bold text-amber-700">{embeddingStats.pending + embeddingStats.processing}</p>
+                      <p className="text-[10px] text-amber-600">Pending</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 text-xs"
+                  onClick={() => startReindex("all")}
+                  disabled={reindexing}
+                  data-testid="reindex-all-btn"
+                >
+                  {reindexing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  Re-index All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 text-xs border-red-200 text-red-700 hover:bg-red-50"
+                  onClick={() => startReindex("failed")}
+                  disabled={reindexing || !embeddingStats?.failed}
+                  data-testid="reindex-failed-btn"
+                >
+                  <AlertCircle className="w-3 h-3" />
+                  Retry Failed ({embeddingStats?.failed || 0})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+                  onClick={() => startReindex("unindexed")}
+                  disabled={reindexing || !(embeddingStats?.failed || embeddingStats?.pending || embeddingStats?.none)}
+                  data-testid="reindex-unindexed-btn"
+                >
+                  <Brain className="w-3 h-3" />
+                  Index Unindexed
+                </Button>
+              </div>
+
+              {/* Problem Files List */}
+              {embeddingStats?.problem_files?.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-2">Files needing attention ({embeddingStats.problem_files.length})</h4>
+                  <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2 bg-gray-50/50">
+                    {embeddingStats.problem_files.map((f) => (
+                      <div key={f.id} className="flex items-center gap-2 text-xs py-1 px-1.5 rounded hover:bg-gray-100 transition-colors" data-testid={`problem-file-${f.id}`}>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          f.embedding_status === "failed" ? "bg-red-500" :
+                          f.embedding_status === "skipped" ? "bg-gray-400" :
+                          f.embedding_status === "pending" ? "bg-amber-500" :
+                          "bg-gray-300"
+                        }`} />
+                        <span className="truncate flex-1 font-medium">{f.original_filename}</span>
+                        <span className="text-muted-foreground flex-shrink-0">
+                          {f.embedding_error || f.embedding_status || "No status"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {embeddingStats && embeddingStats.problem_files?.length === 0 && (
+                <p className="text-xs text-green-600 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> All files are indexed and ready for Smart Search.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
