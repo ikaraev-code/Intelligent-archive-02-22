@@ -109,6 +109,7 @@ export default function AIChatPage() {
   const [uploading, setUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState([]); // {id, name, uploadStatus, embeddingStatus}
   const [isDragging, setIsDragging] = useState(false);
+  const [recentFileIds, setRecentFileIds] = useState([]); // recently uploaded file IDs for priority search
   const fileInputRef = useRef(null);
   const dragCounter = useRef(0);
   const pollIntervalRef = useRef(null);
