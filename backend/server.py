@@ -1180,22 +1180,37 @@ async def get_user_file_context(user_id: str, limit: int = 20) -> str:
     
     return "\n".join(context_parts)
 
-async def get_rag_context(query: str, user_id: str) -> tuple:
-    """Get relevant content from embeddings for RAG. Returns (context_string, sources_list)"""
-    relevant_chunks = await find_relevant_content(query, user_id, limit=5)
+async def get_rag_context(query: str, user_id: str, priority_file_ids: List[str] = None) -> tuple:
+    """Get relevant content from embeddings for RAG. Returns (context_string, sources_list).
+    If priority_file_ids provided, those files get a similarity boost."""
+    relevant_chunks = await find_relevant_content(query, user_id, limit=8)
     
     if not relevant_chunks:
         return "", []
     
+    # Boost priority files (recently uploaded)
+    if priority_file_ids:
+        BOOST = 0.15
+        for chunk in relevant_chunks:
+            if chunk["file_id"] in priority_file_ids:
+                chunk["similarity"] = min(1.0, chunk["similarity"] + BOOST)
+        relevant_chunks.sort(key=lambda x: x["similarity"], reverse=True)
+    
+    # Take top 5 after re-ranking
+    top_chunks = relevant_chunks[:5]
+    
     context_parts = ["Relevant content from the archive (use this to answer the user's question). IMPORTANT: When citing information, reference the source file name."]
     seen_files = set()
     sources = []
+    seen_source_files = set()
     
-    for chunk in relevant_chunks:
+    for chunk in top_chunks:
         file_doc = await db.files.find_one({"id": chunk["file_id"]}, {"original_filename": 1, "file_type": 1, "id": 1})
-        filename = file_doc.get("original_filename", "Unknown file") if file_doc else "Unknown file"
-        file_type = file_doc.get("file_type", "document") if file_doc else "document"
-        file_id = file_doc.get("id", chunk["file_id"]) if file_doc else chunk["file_id"]
+        if not file_doc:
+            continue
+        filename = file_doc.get("original_filename", "Unknown file")
+        file_type = file_doc.get("file_type", "document")
+        file_id = file_doc.get("id", chunk["file_id"])
         
         if chunk["file_id"] not in seen_files:
             context_parts.append(f"\n--- From: {filename} (relevance: {chunk['similarity']:.2f}) ---")
@@ -1203,14 +1218,16 @@ async def get_rag_context(query: str, user_id: str) -> tuple:
         
         context_parts.append(chunk["chunk_text"])
         
-        # Build source entry for frontend
-        sources.append({
-            "file_id": file_id,
-            "filename": filename,
-            "file_type": file_type,
-            "passage": chunk["chunk_text"][:300],
-            "relevance": round(chunk["similarity"], 2)
-        })
+        # Deduplicate sources by file_id
+        if file_id not in seen_source_files:
+            sources.append({
+                "file_id": file_id,
+                "filename": filename,
+                "file_type": file_type,
+                "passage": chunk["chunk_text"][:300],
+                "relevance": round(chunk["similarity"], 2)
+            })
+            seen_source_files.add(file_id)
     
     return "\n".join(context_parts), sources
 
