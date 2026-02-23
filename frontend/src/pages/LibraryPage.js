@@ -440,7 +440,7 @@ export default function LibraryPage({ onNavigate, initialTag }) {
           <DialogHeader>
             <DialogTitle>Delete File</DialogTitle>
           </DialogHeader>
-          <p className="text-sm">Are you sure you want to delete <strong>{deletingFile?.original_filename}</strong>? This cannot be undone.</p>
+          <p className="text-sm">Are you sure you want to delete <strong>{deletingFile?.original_filename}</strong>? This will also remove it from any projects and delete its embeddings. This cannot be undone.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeletingFile(null)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmDelete} data-testid="confirm-delete-btn">Delete</Button>
