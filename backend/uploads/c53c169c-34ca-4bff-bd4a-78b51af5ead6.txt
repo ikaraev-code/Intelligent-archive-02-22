@@ -1,0 +1,17 @@
+Quantum Computing: A Brief Overview
+
+Quantum computing leverages quantum mechanical phenomena such as superposition and entanglement to process information. Unlike classical computers that use bits (0 or 1), quantum computers use qubits that can exist in multiple states simultaneously.
+
+Key Advantages:
+1. Exponential speedup for certain problems like factoring large numbers
+2. Superior optimization capabilities for logistics and finance
+3. Drug discovery through molecular simulation
+4. Cryptography and secure communications
+
+Current Challenges:
+- Maintaining quantum coherence (decoherence problem)
+- Error correction requires many physical qubits per logical qubit
+- Operating temperatures near absolute zero
+- Limited number of qubits in current systems (IBM has 1000+ qubits as of 2025)
+
+Major Players: IBM, Google, Microsoft, IonQ, Rigetti, and D-Wave are leading quantum hardware development.
