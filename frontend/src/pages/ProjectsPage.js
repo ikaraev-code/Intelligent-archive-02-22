@@ -855,14 +855,18 @@ export default function ProjectsPage() {
             {projects.map((project) => (
               <Card
                 key={project.id}
-                className="border border-border shadow-none hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group"
+                className={`border shadow-none hover:shadow-sm transition-all cursor-pointer group ${
+                  project.status === "inactive" ? "border-amber-200 bg-amber-50/30 opacity-75" : "border-border hover:border-primary/30"
+                }`}
                 onClick={() => openProject(project)}
                 data-testid={`project-card-${project.id}`}
               >
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
-                      <FolderOpen className="w-4 h-4 text-primary" />
+                    <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
+                      project.status === "inactive" ? "bg-amber-100" : "bg-primary/10"
+                    }`}>
+                      <FolderOpen className={`w-4 h-4 ${project.status === "inactive" ? "text-amber-600" : "text-primary"}`} />
                     </div>
                     <div className="flex items-center gap-0.5">
                       <Button
