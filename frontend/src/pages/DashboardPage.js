@@ -4,7 +4,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { filesAPI } from "../lib/api";
 import { ObjectViewer } from "../components/ObjectViewer";
-import { FileText, Image, Music, Video, HardDrive, Upload, Tags, TrendingUp, Loader2, Play } from "lucide-react";
+import { FileText, Image, Music, Video, HardDrive, Upload, Tags, TrendingUp, Loader2, Play, Brain, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 
 const typeConfig = {
   image: { icon: Image, color: "text-emerald-600", bg: "bg-emerald-50", label: "Images" },
