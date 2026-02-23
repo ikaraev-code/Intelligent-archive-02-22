@@ -612,12 +612,12 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
               } else if (f.embeddingStatus === "failed") {
                 chipColor = "bg-red-100 text-red-700 border-red-200";
                 icon = <AlertCircle className="w-3 h-3" />;
-                label = f.hasText === false ? "No text to index" : "Embedding failed";
+                label = f.embeddingError || (f.hasText === false ? "No text to index" : "Embedding failed");
                 showRetry = f.hasText !== false;
               } else if (f.embeddingStatus === "skipped") {
                 chipColor = "bg-gray-100 text-gray-600 border-gray-200";
                 icon = <FileText className="w-3 h-3" />;
-                label = "No text to index";
+                label = f.embeddingError || "No text to index";
               } else if (f.embeddingStatus === "disabled") {
                 chipColor = "bg-gray-100 text-gray-600 border-gray-200";
                 icon = <AlertCircle className="w-3 h-3" />;
