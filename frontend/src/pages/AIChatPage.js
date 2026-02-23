@@ -253,7 +253,7 @@ export default function AIChatPage() {
     setLoading(true);
 
     try {
-      const res = await chatAPI.send(text.trim(), sessionId);
+      const res = await chatAPI.send(text.trim(), sessionId, true, recentFileIds.length > 0 ? recentFileIds : null);
       const assistantMessage = { 
         role: "assistant", 
         content: res.data.response,
