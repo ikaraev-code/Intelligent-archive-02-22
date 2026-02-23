@@ -600,6 +600,7 @@ export default function AIChatPage() {
             let chipColor = "bg-blue-100 text-blue-700 border-blue-200";
             let icon = <Loader2 className="w-3 h-3 animate-spin" />;
             let label = "Uploading...";
+            let showRetry = false;
             
             if (f.uploadStatus === "error") {
               chipColor = "bg-red-100 text-red-700 border-red-200";
@@ -617,17 +618,35 @@ export default function AIChatPage() {
               } else if (f.embeddingStatus === "failed") {
                 chipColor = "bg-red-100 text-red-700 border-red-200";
                 icon = <AlertCircle className="w-3 h-3" />;
-                label = "Embedding failed";
-              } else if (f.embeddingStatus === "skipped" || f.embeddingStatus === "disabled") {
+                label = f.hasText === false ? "No text to index" : "Embedding failed";
+                showRetry = f.hasText !== false;
+              } else if (f.embeddingStatus === "skipped") {
                 chipColor = "bg-gray-100 text-gray-600 border-gray-200";
                 icon = <FileText className="w-3 h-3" />;
-                label = "Skipped";
+                label = "No text to index";
+              } else if (f.embeddingStatus === "disabled") {
+                chipColor = "bg-gray-100 text-gray-600 border-gray-200";
+                icon = <AlertCircle className="w-3 h-3" />;
+                label = "AI not configured";
               } else {
                 chipColor = "bg-amber-100 text-amber-700 border-amber-200";
                 icon = <Loader2 className="w-3 h-3 animate-spin" />;
                 label = "Queued...";
               }
             }
+            
+            const handleRetry = async () => {
+              if (!f.id) return;
+              try {
+                await filesAPI.retryEmbedding(f.id);
+                setPendingFiles(prev => prev.map((pf, idx) =>
+                  idx === i ? { ...pf, embeddingStatus: "pending" } : pf
+                ));
+                toast.info(`Retrying embedding for ${f.name}`);
+              } catch {
+                toast.error("Retry failed");
+              }
+            };
             
             return (
               <span
@@ -638,6 +657,15 @@ export default function AIChatPage() {
                 {icon}
                 <span className="truncate max-w-[120px]">{f.name}</span>
                 <span className="opacity-70 text-[10px]">{label}</span>
+                {showRetry && (
+                  <button
+                    onClick={handleRetry}
+                    className="ml-0.5 underline text-[10px] font-medium hover:opacity-80"
+                    data-testid={`retry-embedding-${i}`}
+                  >
+                    Retry
+                  </button>
+                )}
               </span>
             );
           })}
