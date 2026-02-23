@@ -58,8 +58,8 @@ export const filesAPI = {
 
 // AI Archivist
 export const chatAPI = {
-  send: (message, sessionId = null, includeFileContext = true) => 
-    api.post("/chat", { message, session_id: sessionId, include_file_context: includeFileContext }),
+  send: (message, sessionId = null, includeFileContext = true, priorityFileIds = null) => 
+    api.post("/chat", { message, session_id: sessionId, include_file_context: includeFileContext, priority_file_ids: priorityFileIds }),
   getSession: (sessionId) => api.get("/chat/sessions", { params: { session_id: sessionId } }),
   clearSession: (sessionId) => api.delete(`/chat/sessions/${sessionId}`),
   speechToText: (audioBlob) => {
