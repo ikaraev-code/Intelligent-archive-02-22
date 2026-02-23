@@ -288,12 +288,13 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
     };
   }, [pendingFiles.map(f => `${f.id}:${f.embeddingStatus}`).join(",")]);
 
-  // Auto-dismiss fully completed files after 5s
+  // Auto-dismiss fully completed files after 5s (but keep failed ones with retry)
   useEffect(() => {
     const allDone = pendingFiles.length > 0 && pendingFiles.every(f =>
       f.uploadStatus === "error" || f.embeddingStatus === "completed" || f.embeddingStatus === "failed" || f.embeddingStatus === "skipped" || f.embeddingStatus === "disabled"
     );
-    if (allDone) {
+    const hasRetryable = pendingFiles.some(f => f.embeddingStatus === "failed" && f.hasText !== false);
+    if (allDone && !hasRetryable) {
       const timer = setTimeout(() => setPendingFiles([]), 5000);
       return () => clearTimeout(timer);
     }
