@@ -782,6 +782,21 @@ async def get_embedding_status(user=Depends(get_current_user)):
     }
 
 
+@api_router.get("/files/batch-status")
+async def get_batch_file_status(ids: str = "", user=Depends(get_current_user)):
+    """Get embedding status for multiple files by comma-separated IDs"""
+    if not ids:
+        return {"statuses": []}
+    file_ids = [fid.strip() for fid in ids.split(",") if fid.strip()]
+    if not file_ids:
+        return {"statuses": []}
+    files = await db.files.find(
+        {"id": {"$in": file_ids}, "$or": [{"user_id": user["id"]}, {"is_public": True}]},
+        {"_id": 0, "id": 1, "original_filename": 1, "embedding_status": 1, "embedding_count": 1}
+    ).to_list(100)
+    return {"statuses": files}
+
+
 @api_router.get("/files/search")
 async def search_files(
     q: str = "",
