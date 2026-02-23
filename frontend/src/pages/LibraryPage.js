@@ -203,8 +203,22 @@ export default function LibraryPage({ onNavigate, initialTag }) {
   const confirmDelete = async () => {
     if (!deletingFile) return;
     try {
-      await filesAPI.delete(deletingFile.id);
-      toast.success("File deleted");
+      const res = await filesAPI.delete(deletingFile.id);
+      const affected = res.data.affected_projects || [];
+      if (affected.length > 0) {
+        const inactiveProjects = affected.filter(p => p.became_inactive);
+        const updatedProjects = affected.filter(p => !p.became_inactive);
+        let msg = "File deleted.";
+        if (updatedProjects.length > 0) {
+          msg += ` Removed from ${updatedProjects.length} project${updatedProjects.length > 1 ? "s" : ""}: ${updatedProjects.map(p => p.name).join(", ")}.`;
+        }
+        if (inactiveProjects.length > 0) {
+          msg += ` ${inactiveProjects.length} project${inactiveProjects.length > 1 ? "s" : ""} now inactive: ${inactiveProjects.map(p => p.name).join(", ")}.`;
+        }
+        toast.info(msg, { duration: 6000 });
+      } else {
+        toast.success("File deleted");
+      }
       setDeletingFile(null);
       loadFiles();
     } catch (err) {
