@@ -39,6 +39,9 @@ import {
   List,
   Download,
   Paperclip,
+  CheckCircle2,
+  AlertCircle,
+  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 
