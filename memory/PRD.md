@@ -15,7 +15,8 @@ Rebuild an application from GitHub repository `https://github.com/ikaraev-code/I
 9. **Priority File Search** - recently uploaded files boosted in AI Archivist RAG
 10. **Unique Test IDs** - desktop/mobile sidebar have distinct data-testid attributes
 11. **RAG Source Deduplication** - sources array has unique file entries, deleted files skipped
-12. **Batch Re-indexing** - Library panel with stats breakdown + filtered re-index (all/failed/unindexed)
+12. **Batch Re-indexing** - Library panel with stats breakdown + filtered re-index
+13. **Dashboard Embedding Health** - donut chart widget showing search readiness at a glance
 
 ## Tech Stack
 - Frontend: React + Tailwind CSS + shadcn/ui
@@ -23,30 +24,6 @@ Rebuild an application from GitHub repository `https://github.com/ikaraev-code/I
 - Database: MongoDB
 - AI: OpenAI (text-embedding-3-small for embeddings, GPT-5.2 via Emergent LLM key for chat)
 - PDF: fpdf2
-
-## Architecture
-```
-/app/
-├── backend/
-│   ├── .env (MONGO_URL, DB_NAME, EMERGENT_LLM_KEY, OPENAI_API_KEY)
-│   ├── requirements.txt
-│   ├── server.py (all API logic)
-│   └── uploads/
-└── frontend/
-    ├── .env (REACT_APP_BACKEND_URL)
-    ├── src/
-    │   ├── components/ (ui/, Sidebar.js, FileCard.js, ObjectViewer.js)
-    │   ├── lib/api.js (all API calls)
-    │   ├── pages/ (Dashboard, Upload, Library, Search, AIChatPage, ProjectsPage, ArticlePage, FileDetailPage)
-    │   └── App.js
-```
-
-## Key DB Collections
-- **users**: {id, email, name, password_hash}
-- **files**: {id, user_id, original_filename, content_text, tags[], embedding_status, embedding_count, embedding_error}
-- **embeddings**: {id, file_id, chunk_index, chunk_text, embedding[]}
-- **projects**: {id, user_id, name, description, file_ids[], status}
-- **project_messages**: {id, project_id, role, content, sources[]}
 
 ## Completed Features (All Tested)
 - [x] App rebuild from GitHub
@@ -61,6 +38,7 @@ Rebuild an application from GitHub repository `https://github.com/ikaraev-code/I
 - [x] P2: Unique data-testid for desktop/mobile sidebar (Feb 23)
 - [x] P3: RAG source deduplication + deleted file skip (Feb 23)
 - [x] Batch Re-indexing UI with stats + filtered reindex (Feb 23)
+- [x] Dashboard Embedding Health donut widget (Feb 23)
 
 ## Future / Backlog
 - Test with diverse file types (PDF, DOCX, images)
