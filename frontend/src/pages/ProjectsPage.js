@@ -525,6 +525,14 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
         </div>
       </div>
 
+      {/* Inactive project banner */}
+      {(project.status === "inactive" || (project.file_count === 0 && (!project.file_ids || project.file_ids.length === 0))) && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm" data-testid="project-inactive-banner">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>This project has no files attached. Upload or drag files into the chat to reactivate it.</span>
+        </div>
+      )}
+
       {/* Chat */}
       <Card className="flex-1 overflow-hidden border border-border">
         <ScrollArea className="h-full p-4">
