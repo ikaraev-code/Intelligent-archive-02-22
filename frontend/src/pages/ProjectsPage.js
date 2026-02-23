@@ -490,8 +490,44 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
         </ScrollArea>
       </Card>
 
+      {/* Pending Files */}
+      {pendingFiles.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3 mb-1">
+          {pendingFiles.map((f, i) => (
+            <span key={i} className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+              f.status === "done" ? "bg-green-100 text-green-700" :
+              f.status === "error" ? "bg-red-100 text-red-700" :
+              "bg-blue-100 text-blue-700"
+            }`}>
+              {f.status === "uploading" && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+              {f.status === "done" && <FileText className="w-2.5 h-2.5" />}
+              {f.name}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Input */}
       <div className="flex gap-2 mt-3">
+        <input
+          type="file"
+          multiple
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          className="hidden"
+          data-testid="project-file-input"
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading || loading}
+          className="flex-shrink-0"
+          title="Attach files to project"
+          data-testid="project-attach-btn"
+        >
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+        </Button>
         <Button variant={isRecording ? "destructive" : "outline"} size="icon" onClick={toggleRecording} disabled={transcribing || loading} className="flex-shrink-0">
           {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
         </Button>
