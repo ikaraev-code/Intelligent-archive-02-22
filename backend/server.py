@@ -802,7 +802,7 @@ async def get_batch_file_status(ids: str = "", user=Depends(get_current_user)):
         return {"statuses": []}
     files = await db.files.find(
         {"id": {"$in": file_ids}, "$or": [{"user_id": user["id"]}, {"is_public": True}]},
-        {"_id": 0, "id": 1, "original_filename": 1, "embedding_status": 1, "embedding_count": 1, "file_type": 1, "content_text": 1}
+        {"_id": 0, "id": 1, "original_filename": 1, "embedding_status": 1, "embedding_count": 1, "file_type": 1, "content_text": 1, "embedding_error": 1}
     ).to_list(100)
     # Add has_text flag and strip content_text from response
     for f in files:
