@@ -187,21 +187,24 @@ export default function AIChatPage() {
     e.target.value = "";
     
     setUploading(true);
-    setPendingFiles(files.map(f => ({ name: f.name, status: "uploading" })));
+    const initialPending = files.map(f => ({ id: null, name: f.name, uploadStatus: "uploading", embeddingStatus: null }));
+    setPendingFiles(prev => [...prev, ...initialPending]);
+    const offset = pendingFiles.length; // offset for indexing into the new batch
     
     const uploaded = [];
     for (let i = 0; i < files.length; i++) {
       try {
         const formData = new FormData();
         formData.append("file", files[i]);
-        await filesAPI.upload(formData);
-        uploaded.push(files[i].name);
+        const res = await filesAPI.upload(formData);
+        const fileId = res.data.id;
+        uploaded.push({ id: fileId, name: files[i].name });
         setPendingFiles(prev => prev.map((pf, idx) => 
-          idx === i ? { ...pf, status: "done" } : pf
+          idx === offset + i ? { ...pf, id: fileId, uploadStatus: "done", embeddingStatus: res.data.embedding_status || "pending" } : pf
         ));
       } catch {
         setPendingFiles(prev => prev.map((pf, idx) => 
-          idx === i ? { ...pf, status: "error" } : pf
+          idx === offset + i ? { ...pf, uploadStatus: "error" } : pf
         ));
       }
     }
@@ -209,15 +212,13 @@ export default function AIChatPage() {
     setUploading(false);
     
     if (uploaded.length > 0) {
-      const names = uploaded.join(", ");
-      toast.success(`${uploaded.length} file${uploaded.length > 1 ? "s" : ""} uploaded and embedding`);
+      const names = uploaded.map(u => u.name).join(", ");
+      toast.success(`${uploaded.length} file${uploaded.length > 1 ? "s" : ""} uploaded`);
       setMessages(prev => [...prev, {
         role: "assistant",
-        content: `I've added ${uploaded.length} new file${uploaded.length > 1 ? "s" : ""} to your archive: ${names}. They are now being indexed for search and will be available for questions shortly.`
+        content: `I've added ${uploaded.length} new file${uploaded.length > 1 ? "s" : ""} to your archive: ${names}. They are now being indexed for search — watch the status chips below.`
       }]);
     }
-    
-    setTimeout(() => setPendingFiles([]), 3000);
   };
 
   const handleDragEnter = (e) => {
