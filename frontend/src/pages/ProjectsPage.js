@@ -212,6 +212,11 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(false);
   
+  // File upload state
+  const [uploading, setUploading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const fileInputRef = useRef(null);
+  
   const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
