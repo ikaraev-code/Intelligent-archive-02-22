@@ -123,6 +123,45 @@ export default function AIChatPage() {
     }]);
   }, []);
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    e.target.value = "";
+    
+    setUploading(true);
+    setPendingFiles(files.map(f => ({ name: f.name, status: "uploading" })));
+    
+    const uploaded = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const formData = new FormData();
+        formData.append("file", files[i]);
+        await filesAPI.upload(formData);
+        uploaded.push(files[i].name);
+        setPendingFiles(prev => prev.map((pf, idx) => 
+          idx === i ? { ...pf, status: "done" } : pf
+        ));
+      } catch {
+        setPendingFiles(prev => prev.map((pf, idx) => 
+          idx === i ? { ...pf, status: "error" } : pf
+        ));
+      }
+    }
+    
+    setUploading(false);
+    
+    if (uploaded.length > 0) {
+      const names = uploaded.join(", ");
+      toast.success(`${uploaded.length} file${uploaded.length > 1 ? "s" : ""} uploaded and embedding`);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: `I've added ${uploaded.length} new file${uploaded.length > 1 ? "s" : ""} to your archive: ${names}. They are now being indexed for search and will be available for questions shortly.`
+      }]);
+    }
+    
+    setTimeout(() => setPendingFiles([]), 3000);
+  };
+
   const sendMessage = async (text = input) => {
     if (!text.trim()) return;
     
