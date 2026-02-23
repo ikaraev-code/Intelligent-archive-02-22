@@ -20,14 +20,14 @@ export function Sidebar({ currentPage, onNavigate, onLogout, user }) {
     setMobileOpen(false);
   };
 
-  const sidebarContent = (
+  const renderSidebarContent = (prefix) => (
     <>
       <div className="p-6">
         <div className="flex items-center gap-3 mb-1">
           <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
             <Archive className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight" data-testid="sidebar-title">Archiva</h1>
+          <h1 className="text-xl font-bold tracking-tight" data-testid={`${prefix}-sidebar-title`}>Archiva</h1>
         </div>
         <p className="text-xs text-muted-foreground ml-12">Multimedia Archive</p>
       </div>
@@ -45,7 +45,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout, user }) {
                 : "text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => handleNav(item.id)}
-            data-testid={`nav-${item.id}`}
+            data-testid={`${prefix}-nav-${item.id}`}
           >
             <item.icon className="w-4 h-4" />
             {item.label}
@@ -59,11 +59,11 @@ export function Sidebar({ currentPage, onNavigate, onLogout, user }) {
             {user?.name?.[0]?.toUpperCase() || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" data-testid="user-name">{user?.name}</p>
+            <p className="text-sm font-medium truncate" data-testid={`${prefix}-user-name`}>{user?.name}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
         </div>
-        <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive" onClick={onLogout} data-testid="logout-button">
+        <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive" onClick={onLogout} data-testid={`${prefix}-logout-button`}>
           <LogOut className="w-4 h-4" />
           Sign Out
         </Button>
@@ -103,12 +103,12 @@ export function Sidebar({ currentPage, onNavigate, onLogout, user }) {
             <X className="w-5 h-5" />
           </Button>
         </div>
-        {sidebarContent}
+        {renderSidebarContent("mobile")}
       </aside>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 h-screen bg-[#F8FAFC] border-r border-border flex-col fixed left-0 top-0 z-30" data-testid="sidebar">
-        {sidebarContent}
+      <aside className="hidden md:flex w-64 h-screen bg-[#F8FAFC] border-r border-border flex-col fixed left-0 top-0 z-30" data-testid="desktop-sidebar">
+        {renderSidebarContent("desktop")}
       </aside>
     </>
   );
