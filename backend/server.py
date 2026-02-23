@@ -1531,7 +1531,7 @@ async def append_to_project(project_id: str, data: ProjectAppend, user=Depends(g
     
     await db.projects.update_one(
         {"id": project_id},
-        {"$set": {"file_ids": merged_ids, "updated_at": now}}
+        {"$set": {"file_ids": merged_ids, "updated_at": now, "status": "active" if merged_ids else "inactive"}}
     )
     
     # Add summary as a new assistant message
