@@ -25,7 +25,11 @@ import {
   ChevronDown,
   ChevronUp,
   Paperclip,
-  X
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Upload,
+  Cpu
 } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
