@@ -902,6 +902,9 @@ export default function ProjectsPage() {
                     </div>
                   </div>
                   <h3 className="font-semibold text-sm mb-0.5 truncate">{project.name}</h3>
+                  {project.status === "inactive" && (
+                    <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium mb-1">Inactive</span>
+                  )}
                   {project.description && (
                     <p className="text-[11px] text-muted-foreground mb-2 line-clamp-1">{project.description}</p>
                   )}
