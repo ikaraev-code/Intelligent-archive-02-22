@@ -59,8 +59,18 @@ export default function FileDetailPage({ fileId, onNavigate }) {
 
   const handleDelete = async () => {
     try {
-      await filesAPI.delete(fileId);
-      toast.success("File deleted");
+      const res = await filesAPI.delete(fileId);
+      const affected = res.data.affected_projects || [];
+      if (affected.length > 0) {
+        const inactive = affected.filter(p => p.became_inactive);
+        let msg = "File deleted.";
+        if (inactive.length > 0) {
+          msg += ` ${inactive.length} project${inactive.length > 1 ? "s" : ""} now inactive: ${inactive.map(p => p.name).join(", ")}.`;
+        }
+        toast.info(msg, { duration: 6000 });
+      } else {
+        toast.success("File deleted");
+      }
       onNavigate("library");
     } catch (err) { toast.error("Failed to delete file"); }
   };
