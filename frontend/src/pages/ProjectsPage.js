@@ -242,6 +242,51 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    e.target.value = "";
+    
+    setUploading(true);
+    setPendingFiles(files.map(f => ({ name: f.name, status: "uploading" })));
+    
+    const uploadedIds = [];
+    const uploadedNames = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const formData = new FormData();
+        formData.append("file", files[i]);
+        const res = await filesAPI.upload(formData);
+        uploadedIds.push(res.data.id);
+        uploadedNames.push(files[i].name);
+        setPendingFiles(prev => prev.map((pf, idx) => 
+          idx === i ? { ...pf, status: "done" } : pf
+        ));
+      } catch {
+        setPendingFiles(prev => prev.map((pf, idx) => 
+          idx === i ? { ...pf, status: "error" } : pf
+        ));
+      }
+    }
+    
+    // Add uploaded files to this project
+    if (uploadedIds.length > 0) {
+      try {
+        await projectsAPI.append(project.id, { file_ids: uploadedIds });
+      } catch {}
+      const names = uploadedNames.join(", ");
+      toast.success(`${uploadedIds.length} file${uploadedIds.length > 1 ? "s" : ""} added to project`);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: `${uploadedIds.length} new file${uploadedIds.length > 1 ? "s" : ""} uploaded and added to this project: ${names}. They are being indexed and will be available for questions shortly.`,
+        sources: []
+      }]);
+    }
+    
+    setUploading(false);
+    setTimeout(() => setPendingFiles([]), 3000);
+  };
+
   const sendMessage = async (text = input) => {
     if (!text.trim()) return;
     const userMsg = { role: "user", content: text.trim(), sources: [] };
