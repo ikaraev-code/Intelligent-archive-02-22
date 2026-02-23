@@ -99,17 +99,18 @@ export default function LibraryPage({ onNavigate, initialTag }) {
     }
   };
 
-  const startReindex = async () => {
+  const startReindex = async (filter = "all") => {
     setReindexing(true);
     try {
-      const res = await filesAPI.reindex();
+      const res = await filesAPI.reindex(filter);
       const taskId = res.data.task_id;
       if (!taskId) {
         toast.info(res.data.message || "No files to reindex");
         setReindexing(false);
         return;
       }
-      toast.success("Reindexing started...");
+      const label = filter === "all" ? "all files" : filter === "failed" ? "failed files" : "unindexed files";
+      toast.success(`Reindexing ${label} started...`);
       setReindexProgress({ processed: 0, total: res.data.total, status: "running" });
       
       // Poll for progress
