@@ -670,6 +670,14 @@ export default function AIChatPage() {
               </span>
             );
           })}
+          <button
+            onClick={() => setPendingFiles([])}
+            className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+            title="Dismiss all"
+            data-testid="dismiss-status-chips"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
