@@ -305,7 +305,9 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
     e.target.value = "";
     
     setUploading(true);
-    setPendingFiles(files.map(f => ({ name: f.name, status: "uploading" })));
+    const initialPending = files.map(f => ({ id: null, name: f.name, uploadStatus: "uploading", embeddingStatus: null }));
+    setPendingFiles(prev => [...prev, ...initialPending]);
+    const offset = pendingFiles.length;
     
     const uploadedIds = [];
     const uploadedNames = [];
@@ -314,14 +316,15 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
         const formData = new FormData();
         formData.append("file", files[i]);
         const res = await filesAPI.upload(formData);
-        uploadedIds.push(res.data.id);
+        const fileId = res.data.id;
+        uploadedIds.push(fileId);
         uploadedNames.push(files[i].name);
         setPendingFiles(prev => prev.map((pf, idx) => 
-          idx === i ? { ...pf, status: "done" } : pf
+          idx === offset + i ? { ...pf, id: fileId, uploadStatus: "done", embeddingStatus: res.data.embedding_status || "pending" } : pf
         ));
       } catch {
         setPendingFiles(prev => prev.map((pf, idx) => 
-          idx === i ? { ...pf, status: "error" } : pf
+          idx === offset + i ? { ...pf, uploadStatus: "error" } : pf
         ));
       }
     }
@@ -335,13 +338,12 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
       toast.success(`${uploadedIds.length} file${uploadedIds.length > 1 ? "s" : ""} added to project`);
       setMessages(prev => [...prev, {
         role: "assistant",
-        content: `${uploadedIds.length} new file${uploadedIds.length > 1 ? "s" : ""} uploaded and added to this project: ${names}. They are being indexed and will be available for questions shortly.`,
+        content: `${uploadedIds.length} new file${uploadedIds.length > 1 ? "s" : ""} uploaded and added to this project: ${names}. Watch the status chips below — they'll turn green when ready for questions.`,
         sources: []
       }]);
     }
     
     setUploading(false);
-    setTimeout(() => setPendingFiles([]), 3000);
   };
 
   const handleDragEnter = (e) => {
