@@ -90,6 +90,15 @@ export default function LibraryPage({ onNavigate, initialTag }) {
     }
   };
 
+  const loadEmbeddingStats = async () => {
+    try {
+      const res = await filesAPI.embeddingStats();
+      setEmbeddingStats(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const startReindex = async () => {
     setReindexing(true);
     try {
