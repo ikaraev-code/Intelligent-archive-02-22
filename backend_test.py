@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class ArchivaAPITester:
-    def __init__(self, base_url="https://gh-rebuild.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://upload-status-hub-1.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.test_user = {
