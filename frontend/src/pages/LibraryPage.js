@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { FileCard } from "../components/FileCard";
 import { ObjectViewer } from "../components/ObjectViewer";
 import { filesAPI } from "../lib/api";
-import { Loader2, Grid3X3, List, ChevronLeft, ChevronRight, Globe, Lock, Users, Brain, RefreshCw } from "lucide-react";
+import { Loader2, Grid3X3, List, ChevronLeft, ChevronRight, Globe, Lock, Users, Brain, RefreshCw, AlertCircle, CheckCircle2, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LibraryPage({ onNavigate, initialTag }) {
