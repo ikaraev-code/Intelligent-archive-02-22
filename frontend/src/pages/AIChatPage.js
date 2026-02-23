@@ -372,7 +372,24 @@ export default function AIChatPage() {
   };
 
   return (
-    <div className="space-y-4 fade-in h-[calc(100vh-120px)] flex flex-col" data-testid="ai-chat-page">
+    <div
+      className="space-y-4 fade-in h-[calc(100vh-120px)] flex flex-col relative"
+      data-testid="ai-chat-page"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-primary/5 border-2 border-dashed border-primary rounded-xl flex items-center justify-center backdrop-blur-sm pointer-events-none">
+          <div className="text-center">
+            <Paperclip className="w-10 h-10 text-primary mx-auto mb-2" />
+            <p className="text-lg font-semibold text-primary">Drop files to upload</p>
+            <p className="text-sm text-muted-foreground">Files will be embedded for AI search</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight mb-2">AI Archivist</h1>
