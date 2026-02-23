@@ -593,20 +593,54 @@ export default function AIChatPage() {
         </ScrollArea>
       </Card>
 
-      {/* Pending Files */}
+      {/* Pending Files with Embedding Status */}
       {pendingFiles.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {pendingFiles.map((f, i) => (
-            <span key={i} className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
-              f.status === "done" ? "bg-green-100 text-green-700" :
-              f.status === "error" ? "bg-red-100 text-red-700" :
-              "bg-blue-100 text-blue-700"
-            }`}>
-              {f.status === "uploading" && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
-              {f.status === "done" && <FileText className="w-2.5 h-2.5" />}
-              {f.name}
-            </span>
-          ))}
+        <div className="flex flex-wrap gap-1.5 mb-2" data-testid="embedding-status-bar">
+          {pendingFiles.map((f, i) => {
+            let chipColor = "bg-blue-100 text-blue-700 border-blue-200";
+            let icon = <Loader2 className="w-3 h-3 animate-spin" />;
+            let label = "Uploading...";
+            
+            if (f.uploadStatus === "error") {
+              chipColor = "bg-red-100 text-red-700 border-red-200";
+              icon = <AlertCircle className="w-3 h-3" />;
+              label = "Upload failed";
+            } else if (f.uploadStatus === "done") {
+              if (f.embeddingStatus === "completed") {
+                chipColor = "bg-green-100 text-green-700 border-green-200";
+                icon = <CheckCircle2 className="w-3 h-3" />;
+                label = "Ready";
+              } else if (f.embeddingStatus === "processing") {
+                chipColor = "bg-amber-100 text-amber-700 border-amber-200";
+                icon = <Cpu className="w-3 h-3 animate-pulse" />;
+                label = "Embedding...";
+              } else if (f.embeddingStatus === "failed") {
+                chipColor = "bg-red-100 text-red-700 border-red-200";
+                icon = <AlertCircle className="w-3 h-3" />;
+                label = "Embedding failed";
+              } else if (f.embeddingStatus === "skipped" || f.embeddingStatus === "disabled") {
+                chipColor = "bg-gray-100 text-gray-600 border-gray-200";
+                icon = <FileText className="w-3 h-3" />;
+                label = "Skipped";
+              } else {
+                chipColor = "bg-amber-100 text-amber-700 border-amber-200";
+                icon = <Loader2 className="w-3 h-3 animate-spin" />;
+                label = "Queued...";
+              }
+            }
+            
+            return (
+              <span
+                key={i}
+                className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${chipColor}`}
+                data-testid={`file-status-chip-${i}`}
+              >
+                {icon}
+                <span className="truncate max-w-[120px]">{f.name}</span>
+                <span className="opacity-70 text-[10px]">{label}</span>
+              </span>
+            );
+          })}
         </div>
       )}
 
