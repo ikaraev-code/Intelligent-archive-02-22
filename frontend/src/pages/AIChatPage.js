@@ -596,7 +596,7 @@ export default function AIChatPage() {
 
       {/* Pending Files with Embedding Status */}
       {pendingFiles.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-2" data-testid="embedding-status-bar">
+        <div className="flex flex-wrap items-center gap-1.5 mb-2" data-testid="embedding-status-bar">
           {pendingFiles.map((f, i) => {
             let chipColor = "bg-blue-100 text-blue-700 border-blue-200";
             let icon = <Loader2 className="w-3 h-3 animate-spin" />;
