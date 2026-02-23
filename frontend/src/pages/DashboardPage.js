@@ -126,6 +126,11 @@ export default function DashboardPage({ onNavigate }) {
         </Card>
       </div>
 
+      {/* Embedding Health */}
+      {embeddingStats && embeddingStats.total > 0 && (
+        <EmbeddingHealthWidget stats={embeddingStats} onNavigate={onNavigate} />
+      )}
+
       {/* Type Breakdown + Tags */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border border-border shadow-none" data-testid="type-breakdown">
