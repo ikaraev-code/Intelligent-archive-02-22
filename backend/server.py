@@ -1258,7 +1258,7 @@ information from the user's archive that matches their query. Always cite which 
 information comes from."""
 
         # Get RAG-based context (semantic search for relevant content)
-        rag_context, rag_sources = await get_rag_context(data.message, user["id"])
+        rag_context, rag_sources = await get_rag_context(data.message, user["id"], data.priority_file_ids)
         if rag_context:
             system_message += f"\n\n{rag_context}"
         
