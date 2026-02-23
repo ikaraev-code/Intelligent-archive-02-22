@@ -396,7 +396,24 @@ function ProjectChatView({ project, onBack, onManageFiles }) {
   };
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col" data-testid="project-chat">
+    <div
+      className="h-[calc(100vh-120px)] flex flex-col relative"
+      data-testid="project-chat"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-primary/5 border-2 border-dashed border-primary rounded-xl flex items-center justify-center backdrop-blur-sm pointer-events-none">
+          <div className="text-center">
+            <Paperclip className="w-10 h-10 text-primary mx-auto mb-2" />
+            <p className="text-lg font-semibold text-primary">Drop files to add to project</p>
+            <p className="text-sm text-muted-foreground">Files will be embedded and linked to this project</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack} data-testid="project-back-btn">
