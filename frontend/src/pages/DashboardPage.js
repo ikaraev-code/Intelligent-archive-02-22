@@ -269,7 +269,20 @@ export default function DashboardPage({ onNavigate }) {
 
       {/* Embedding Health */}
       {embeddingStats && embeddingStats.total > 0 && (
-        <EmbeddingHealthWidget stats={embeddingStats} onNavigate={onNavigate} />
+        <EmbeddingHealthWidget stats={embeddingStats} embeddingStatus={embeddingStatus} onNavigate={onNavigate} />
+      )}
+      {embeddingStatus && embeddingStatus.status === "disabled" && (
+        <Card className="border border-red-200 shadow-none bg-red-50/50" data-testid="embedding-disabled-warning">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-red-800">AI Search Unavailable</h3>
+              <p className="text-xs text-red-600 mt-0.5">OpenAI API key is not configured. File embeddings, semantic search, and AI chat will not work. Please check your environment configuration.</p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Type Breakdown + Tags */}
