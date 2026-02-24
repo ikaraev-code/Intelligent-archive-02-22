@@ -69,7 +69,7 @@ function DonutChart({ completed, failed, pending, skipped, total }) {
   );
 }
 
-function EmbeddingHealthWidget({ stats, onNavigate }) {
+function EmbeddingHealthWidget({ stats, embeddingStatus, onNavigate }) {
   const { total, completed, failed, pending, processing, skipped, none } = stats;
   const totalPending = pending + processing;
   const totalSkipped = skipped + (none || 0);
