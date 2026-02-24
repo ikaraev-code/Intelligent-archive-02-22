@@ -212,7 +212,7 @@ async def process_file_embeddings(file_id: str, content_text: str, filename: str
             }})
         else:
             logger.warning(f"No embeddings generated for file {file_id}")
-            await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "failed", "embedding_error": "Embedding generation returned empty results"}})
+            await db.files.update_one({"id": file_id}, {"$set": {"embedding_status": "failed", "embedding_error": "Embedding failed — check API key configuration"}})
             
     except Exception as e:
         logger.error(f"Error processing embeddings for {file_id}: {e}", exc_info=True)
