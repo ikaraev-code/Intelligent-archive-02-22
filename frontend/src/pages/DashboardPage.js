@@ -165,12 +165,14 @@ function EmbeddingHealthWidget({ stats, onNavigate }) {
 export default function DashboardPage({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [embeddingStats, setEmbeddingStats] = useState(null);
+  const [embeddingStatus, setEmbeddingStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [previewFile, setPreviewFile] = useState(null);
 
   useEffect(() => {
     loadStats();
     loadEmbeddingStats();
+    loadEmbeddingStatus();
   }, []);
 
   const loadStats = async () => {
@@ -188,6 +190,13 @@ export default function DashboardPage({ onNavigate }) {
     try {
       const res = await filesAPI.embeddingStats();
       setEmbeddingStats(res.data);
+    } catch {}
+  };
+
+  const loadEmbeddingStatus = async () => {
+    try {
+      const res = await filesAPI.embeddingStatus();
+      setEmbeddingStatus(res.data);
     } catch {}
   };
 
