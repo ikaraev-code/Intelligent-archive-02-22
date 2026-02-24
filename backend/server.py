@@ -104,6 +104,7 @@ async def generate_embeddings(text: str) -> List[float]:
 def generate_embeddings_batch_sync(texts: List[str]) -> List[List[float]]:
     """Generate embeddings for multiple texts in a single API call (more efficient)"""
     if not openai_client or not texts:
+        logger.warning(f"Skipping embeddings: client={'configured' if openai_client else 'NOT configured'}, texts={len(texts) if texts else 0}")
         return []
     try:
         # Normalize and truncate all texts
