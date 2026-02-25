@@ -2514,6 +2514,33 @@ async def delete_content_block(
     return {"message": "Block deleted"}
 
 
+class AppendBlocksRequest(BaseModel):
+    blocks: List[ContentBlock]
+
+
+@api_router.post("/stories/{story_id}/chapters/{chapter_id}/append-blocks")
+async def append_content_blocks(
+    story_id: str, chapter_id: str,
+    data: AppendBlocksRequest,
+    user=Depends(get_current_user)
+):
+    """Atomically append one or more content blocks to a chapter (avoids race conditions)"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    new_blocks = [b.dict() for b in data.blocks]
+    now = datetime.now(timezone.utc).isoformat()
+    await db.chapters.update_one(
+        {"id": chapter_id},
+        {"$push": {"content_blocks": {"$each": new_blocks}}, "$set": {"updated_at": now}}
+    )
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": f"{len(new_blocks)} block(s) added", "total_blocks": len(chapter.get("content_blocks", [])) + len(new_blocks)}
+
+
 @api_router.get("/stories/{story_id}/preview-pdf")
 async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Optional[str] = None, credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
     """Generate a readable PDF preview of the story or a specific chapter"""
