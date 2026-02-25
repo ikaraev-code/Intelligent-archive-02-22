@@ -32,6 +32,7 @@ import {
   ChevronUp,
   FileDown,
   Eye,
+  Languages,
 } from "lucide-react";
 
 // ========== Chapter Composition Chat ==========
