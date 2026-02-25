@@ -2536,20 +2536,6 @@ class TranslateStoryRequest(BaseModel):
     target_language: str  # e.g., "Spanish", "French", "German", etc.
 
 
-# Supported languages for translation
-SUPPORTED_LANGUAGES = [
-    "English", "Spanish", "French", "German", "Italian", "Portuguese", 
-    "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Dutch", 
-    "Polish", "Turkish", "Hindi", "Swedish", "Norwegian", "Danish"
-]
-
-
-@api_router.get("/stories/languages")
-async def get_supported_languages(user=Depends(get_current_user)):
-    """Get list of supported languages for translation"""
-    return {"languages": SUPPORTED_LANGUAGES}
-
-
 @api_router.post("/stories/{story_id}/translate")
 async def translate_story(
     story_id: str,
