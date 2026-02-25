@@ -86,4 +86,26 @@ export const projectsAPI = {
     api.post(`/projects/${id}/chat`, { message, include_file_context: includeFileContext }),
 };
 
+// Stories
+export const storiesAPI = {
+  create: (data) => api.post("/stories", data),
+  list: () => api.get("/stories"),
+  get: (id) => api.get(`/stories/${id}`),
+  update: (id, data) => api.put(`/stories/${id}`, data),
+  delete: (id) => api.delete(`/stories/${id}`),
+  createChapter: (storyId, data) => api.post(`/stories/${storyId}/chapters`, data),
+  getChapter: (storyId, chapterId) => api.get(`/stories/${storyId}/chapters/${chapterId}`),
+  updateChapter: (storyId, chapterId, data) => api.put(`/stories/${storyId}/chapters/${chapterId}`, data),
+  deleteChapter: (storyId, chapterId) => api.delete(`/stories/${storyId}/chapters/${chapterId}`),
+  reorderChapters: (storyId, chapterIds) => api.put(`/stories/${storyId}/chapters/reorder`, { chapter_ids: chapterIds }),
+  uploadMedia: (storyId, chapterId, formData) => 
+    api.post(`/stories/${storyId}/chapters/${chapterId}/media`, formData, { headers: { "Content-Type": "multipart/form-data" } }),
+  importFile: (storyId, chapterId, fileId) => 
+    api.post(`/stories/${storyId}/chapters/${chapterId}/import-file?file_id=${fileId}`),
+  getMessages: (storyId, chapterId = null) => 
+    api.get(`/stories/${storyId}/messages`, { params: chapterId ? { chapter_id: chapterId } : {} }),
+  chat: (storyId, message, mode = "coauthor", chapterId = null) => 
+    api.post(`/stories/${storyId}/chat`, { message, mode, chapter_id: chapterId }),
+};
+
 export default api;
