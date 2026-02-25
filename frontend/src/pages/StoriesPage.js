@@ -207,12 +207,61 @@ function ChapterChat({ story, chapter, onContentUpdate }) {
   );
 }
 
-// ========== Content Block Viewer ==========
-function ContentBlockView({ block, storyId, onDelete }) {
+// ========== Content Block Viewer/Editor ==========
+function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete, isLast }) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(block.content || "");
+
+  const saveEdit = async () => {
+    if (!editText.trim()) return;
+    try {
+      await storiesAPI.updateBlock(storyId, chapterId, index, { ...block, content: editText });
+      setEditing(false);
+      if (onUpdate) onUpdate();
+    } catch {
+      toast.error("Failed to save");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await storiesAPI.deleteBlock(storyId, chapterId, index);
+      if (onDelete) onDelete();
+    } catch {
+      toast.error("Failed to delete block");
+    }
+  };
+
   if (block.type === "text") {
+    if (editing) {
+      return (
+        <div className="group relative" data-testid={`content-block-${index}`}>
+          <Textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            className="min-h-[100px] text-sm"
+            autoFocus
+            data-testid={`edit-block-textarea-${index}`}
+          />
+          <div className="flex gap-1.5 mt-1.5">
+            <Button size="sm" className="h-6 text-xs" onClick={saveEdit} data-testid={`save-block-${index}`}>Save</Button>
+            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => { setEditing(false); setEditText(block.content || ""); }}>Cancel</Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap py-2" data-testid="content-block-text">
-        {block.content}
+      <div className="group relative py-1.5 px-2 -mx-2 rounded hover:bg-muted/50 transition-colors" data-testid={`content-block-${index}`}>
+        <p className="text-sm whitespace-pre-wrap leading-relaxed">{block.content}</p>
+        <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(true)} data-testid={`edit-block-${index}`}>
+            <Edit3 className="w-3 h-3" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6 hover:text-destructive" onClick={handleDelete} data-testid={`delete-block-${index}`}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
       </div>
     );
   }
@@ -223,32 +272,45 @@ function ContentBlockView({ block, storyId, onDelete }) {
 
   if (block.type === "image") {
     return (
-      <div className="my-3" data-testid="content-block-image">
+      <div className="group relative my-3" data-testid={`content-block-${index}`}>
         <img src={mediaUrl} alt={block.caption || ""} className="max-w-full rounded-lg border" />
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="secondary" size="icon" className="h-6 w-6 shadow-sm" onClick={handleDelete} data-testid={`delete-block-${index}`}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (block.type === "video") {
     return (
-      <div className="my-3" data-testid="content-block-video">
+      <div className="group relative my-3" data-testid={`content-block-${index}`}>
         <video controls className="max-w-full rounded-lg border">
           <source src={mediaUrl} />
         </video>
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="secondary" size="icon" className="h-6 w-6 shadow-sm" onClick={handleDelete} data-testid={`delete-block-${index}`}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (block.type === "audio") {
     return (
-      <div className="my-3 flex items-center gap-2" data-testid="content-block-audio">
+      <div className="group relative my-3 flex items-center gap-2" data-testid={`content-block-${index}`}>
         <Music className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         <audio controls className="flex-1 h-8">
           <source src={mediaUrl} />
         </audio>
         {block.caption && <span className="text-xs text-muted-foreground">{block.caption}</span>}
+        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:text-destructive" onClick={handleDelete} data-testid={`delete-block-${index}`}>
+          <Trash2 className="w-3 h-3" />
+        </Button>
       </div>
     );
   }
