@@ -829,12 +829,25 @@ export default function StoriesPage() {
     }
   };
 
+  const handleTranslateSuccess = async (newStoryId) => {
+    // Load the new translated story and navigate to it
+    try {
+      const res = await storiesAPI.get(newStoryId);
+      setSelectedStory(res.data);
+      loadStories(); // Refresh the list in background
+    } catch {
+      toast.error("Failed to load translated story");
+      loadStories();
+    }
+  };
+
   // Story detail view
   if (selectedStory) {
     return (
       <StoryDetailView
         story={selectedStory}
         onBack={() => { setSelectedStory(null); loadStories(); }}
+        onTranslateSuccess={handleTranslateSuccess}
       />
     );
   }
