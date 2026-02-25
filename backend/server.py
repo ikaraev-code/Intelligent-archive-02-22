@@ -2542,7 +2542,7 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
             text = text.replace(k, v)
         return text.encode('latin-1', 'replace').decode('latin-1')
 
-    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]}, {"_id": 0})
+    story = await db.stories.find_one({"id": story_id, "user_id": user_id}, {"_id": 0})
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
 
