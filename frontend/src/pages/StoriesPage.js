@@ -478,24 +478,72 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     }
     setTranslating(true);
     setTranslationStatus("Starting translation...");
+    setTranslationProgress(null);
+    
     try {
-      // Use longer timeout for translation (2 minutes)
+      // Start translation (returns immediately with task_id)
       const res = await storiesAPI.translate(story.id, selectedLanguage);
-      setTranslationStatus("Translation complete!");
-      toast.success(`Story translated to ${selectedLanguage}!`);
-      setShowTranslateDialog(false);
-      setSelectedLanguage("");
-      setTranslationStatus("");
-      // Navigate to the new translated story
-      if (onTranslateSuccess) {
-        onTranslateSuccess(res.data.new_story_id);
-      }
+      const taskId = res.data.task_id;
+      
+      setTranslationProgress({
+        totalChapters: res.data.total_chapters,
+        totalBlocks: res.data.total_blocks,
+        currentChapter: 0,
+        blocksTranslated: 0,
+        currentChapterName: "Starting..."
+      });
+      
+      // Poll for progress
+      const pollProgress = async () => {
+        try {
+          const progressRes = await storiesAPI.getTranslationProgress(taskId);
+          const progress = progressRes.data;
+          
+          setTranslationProgress({
+            totalChapters: progress.total_chapters,
+            totalBlocks: progress.total_blocks,
+            currentChapter: progress.current_chapter,
+            blocksTranslated: progress.blocks_translated,
+            currentChapterName: progress.current_chapter_name
+          });
+          
+          if (progress.status === "completed") {
+            setTranslationStatus("Translation complete!");
+            toast.success(`Story translated to ${selectedLanguage}!`);
+            setShowTranslateDialog(false);
+            setSelectedLanguage("");
+            setTranslationStatus("");
+            setTranslationProgress(null);
+            setTranslating(false);
+            // Navigate to the new translated story
+            if (onTranslateSuccess && progress.new_story_id) {
+              onTranslateSuccess(progress.new_story_id);
+            }
+          } else if (progress.status === "failed") {
+            throw new Error(progress.error || "Translation failed");
+          } else {
+            // Still running, poll again
+            setTimeout(pollProgress, 2000);
+          }
+        } catch (err) {
+          console.error("Progress poll error:", err);
+          const errorDetail = err.response?.data?.detail || err.message || "Translation failed";
+          toast.error(errorDetail);
+          setTranslationStatus("");
+          setTranslationProgress(null);
+          setTranslating(false);
+        }
+      };
+      
+      // Start polling after a short delay
+      setTimeout(pollProgress, 1000);
+      
     } catch (err) {
       console.error("Translation error:", err);
-      const errorDetail = err.response?.data?.detail || err.message || "Translation failed - please try again";
+      const errorDetail = err.response?.data?.detail || err.message || "Failed to start translation";
       toast.error(errorDetail);
       setTranslationStatus("");
-    } finally {
+      setTranslationProgress(null);
       setTranslating(false);
     }
   };
