@@ -2130,6 +2130,64 @@ async def get_tts_options(user=Depends(get_current_user)):
     }
 
 
+# Audio progress endpoints - must be before /{story_id} routes
+@api_router.get("/stories/audio-progress/{task_id}")
+async def get_audio_export_progress(task_id: str, user=Depends(get_current_user)):
+    """Poll audio export progress"""
+    task = audio_export_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Audio export task not found")
+    
+    return {
+        "status": task["status"],
+        "story_name": task["story_name"],
+        "voice": task["voice"],
+        "model": task["model"],
+        "total_chapters": task["total_chapters"],
+        "current_chapter": task["current_chapter"],
+        "current_chapter_name": task["current_chapter_name"],
+        "total_characters": task["total_characters"],
+        "characters_processed": task["characters_processed"],
+        "error": task["error"],
+        "has_audio": task.get("audio_file") is not None
+    }
+
+
+@api_router.get("/stories/audio-download/{task_id}")
+async def download_audio(task_id: str, token: str = None):
+    """Download the generated audio file"""
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    task = audio_export_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Audio export task not found")
+    
+    if task["status"] != "completed" or not task.get("audio_file"):
+        raise HTTPException(status_code=400, detail="Audio not ready for download")
+    
+    audio_path = UPLOAD_DIR / task["audio_file"]
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    
+    # Sanitize filename
+    story_name = task["story_name"].encode('ascii', 'ignore').decode('ascii') or "story"
+    story_name = story_name.replace(" ", "_")
+    filename = f"{story_name}_{task['voice']}.mp3"
+    
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=str(audio_path),
+        media_type="audio/mpeg",
+        filename=filename,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
 @api_router.get("/stories/{story_id}")
 async def get_story(story_id: str, user=Depends(get_current_user)):
     """Get story details with all chapters"""
