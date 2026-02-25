@@ -2279,10 +2279,7 @@ async def add_chapter_media(
     }
     await db.files.insert_one(file_doc)
 
-    # Build download URL
-    token = None
-    auth_header = None
-    # We'll use the file_id for URL construction
+    # Build content block
     media_block = {
         "type": media_type,
         "file_id": file_id,
