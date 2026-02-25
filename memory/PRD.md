@@ -25,6 +25,12 @@ Rebuild an application from GitHub repository and extend with AI-powered feature
   - Import from library files
   - "Add to chapter" button on AI messages
   - Chat history persistence per chapter
+  - Inline editing and deletion of content blocks
+  - PDF preview for chapters and full stories
+- [x] **Bug Fix: Chapter Content Race Condition** (Feb 25, 2026):
+  - Fixed race condition where saving content to multiple chapters would overwrite previously saved content
+  - Implemented atomic append endpoint using MongoDB's $push operator
+  - Both frontend and backend verified working correctly
 
 ## Stories Feature Spec
 - **Story**: Named container with description, has multiple chapters
