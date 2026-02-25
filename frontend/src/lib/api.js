@@ -110,7 +110,8 @@ export const storiesAPI = {
     api.post(`/stories/${storyId}/chapters/${chapterId}/append-blocks`, { blocks: [block] }),
   getLanguages: () => api.get("/stories/languages"),
   translate: (storyId, targetLanguage) =>
-    api.post(`/stories/${storyId}/translate`, { target_language: targetLanguage }, { timeout: 180000 }), // 3 min timeout
+    api.post(`/stories/${storyId}/translate`, { target_language: targetLanguage }),
+  getTranslationProgress: (taskId) => api.get(`/stories/translate-progress/${taskId}`),
   previewPdfUrl: (storyId, chapterId = null) => {
     const token = localStorage.getItem("archiva_token");
     let url = `${BACKEND_URL}/api/stories/${storyId}/preview-pdf?token=${token}`;
