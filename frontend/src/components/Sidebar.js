@@ -13,6 +13,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout, user }) {
     { id: "search", label: "Search", icon: Search },
     { id: "ai-chat", label: "AI Archivist", icon: MessageSquare },
     { id: "projects", label: "Projects", icon: FolderKanban },
+    { id: "stories", label: "Stories", icon: BookOpen },
   ];
 
   const handleNav = (id) => {
