@@ -2940,10 +2940,6 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
 
 # ========== Audio Export (TTS) ==========
 
-TTS_VOICES = ["alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"]
-TTS_MODELS = ["tts-1", "tts-1-hd"]
-
-
 class ExportAudioRequest(BaseModel):
     voice: str = "nova"  # Default to nova (energetic, upbeat - good for stories)
     model: str = "tts-1"  # Standard quality, faster
@@ -2952,28 +2948,6 @@ class ExportAudioRequest(BaseModel):
 
 # Audio export task tracking
 audio_export_tasks: Dict[str, dict] = {}
-
-
-@api_router.get("/stories/tts-options")
-async def get_tts_options(user=Depends(get_current_user)):
-    """Get available TTS voices and models"""
-    return {
-        "voices": [
-            {"id": "alloy", "name": "Alloy", "description": "Neutral, balanced"},
-            {"id": "ash", "name": "Ash", "description": "Clear, articulate"},
-            {"id": "coral", "name": "Coral", "description": "Warm, friendly"},
-            {"id": "echo", "name": "Echo", "description": "Smooth, calm"},
-            {"id": "fable", "name": "Fable", "description": "Expressive, storytelling"},
-            {"id": "nova", "name": "Nova", "description": "Energetic, upbeat"},
-            {"id": "onyx", "name": "Onyx", "description": "Deep, authoritative"},
-            {"id": "sage", "name": "Sage", "description": "Wise, measured"},
-            {"id": "shimmer", "name": "Shimmer", "description": "Bright, cheerful"},
-        ],
-        "models": [
-            {"id": "tts-1", "name": "Standard", "description": "Fast, good quality"},
-            {"id": "tts-1-hd", "name": "HD", "description": "High definition, slower"},
-        ]
-    }
 
 
 @api_router.post("/stories/{story_id}/export-audio")
