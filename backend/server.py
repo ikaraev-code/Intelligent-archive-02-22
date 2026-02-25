@@ -3006,7 +3006,8 @@ async def start_audio_export(
         "current_chapter_name": "",
         "total_characters": len(total_text),
         "characters_processed": 0,
-        "audio_data": None,
+        "audio_file": None,
+        "audio_data": None,  # Deprecated, using file now
         "error": None,
         "started_at": datetime.now(timezone.utc).isoformat()
     }
