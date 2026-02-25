@@ -373,6 +373,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [selectedModel, setSelectedModel] = useState("tts-1");
   const [exporting, setExporting] = useState(false);
   const [audioProgress, setAudioProgress] = useState(null);
+  const [audioTaskId, setAudioTaskId] = useState(null);
 
   useEffect(() => {
     loadStory();
