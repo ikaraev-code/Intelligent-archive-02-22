@@ -558,6 +558,24 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
 
   return (
     <div className="h-full flex flex-col" data-testid="story-detail">
+      {/* Translation Progress Banner (shows when dialog is closed but translation is running) */}
+      {translating && !showTranslateDialog && (
+        <div 
+          className="bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center gap-3 cursor-pointer hover:bg-primary/15 transition-colors"
+          onClick={() => setShowTranslateDialog(true)}
+          data-testid="translation-progress-banner"
+        >
+          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-primary">
+              Translating to {selectedLanguage}...
+              {translationProgress && ` (Chapter ${translationProgress.currentChapter}/${translationProgress.totalChapters})`}
+            </p>
+          </div>
+          <span className="text-xs text-muted-foreground">Click to view progress</span>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-border">
         <Button variant="ghost" size="icon" onClick={onBack} data-testid="story-back-btn">
