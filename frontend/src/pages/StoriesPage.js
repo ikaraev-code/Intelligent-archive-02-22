@@ -34,6 +34,7 @@ import {
   FileDown,
   Eye,
   Languages,
+  Headphones,
 } from "lucide-react";
 
 // ========== Chapter Composition Chat ==========
