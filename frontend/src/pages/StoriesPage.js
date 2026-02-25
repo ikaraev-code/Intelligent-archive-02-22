@@ -573,7 +573,16 @@ function StoryDetailView({ story: initialStory, onBack }) {
                 ) : (
                   <div className="space-y-1">
                     {(selectedChapter.content_blocks || []).map((block, i) => (
-                      <ContentBlockView key={i} block={block} storyId={story.id} />
+                      <ContentBlockView
+                        key={i}
+                        block={block}
+                        index={i}
+                        storyId={story.id}
+                        chapterId={selectedChapter.id}
+                        onUpdate={loadStory}
+                        onDelete={loadStory}
+                        isLast={i === (selectedChapter.content_blocks || []).length - 1}
+                      />
                     ))}
                   </div>
                 )}
