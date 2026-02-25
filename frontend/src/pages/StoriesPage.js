@@ -708,6 +708,66 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Translate Story Dialog */}
+      <Dialog open={showTranslateDialog} onOpenChange={setShowTranslateDialog}>
+        <DialogContent className="max-w-md" data-testid="translate-dialog">
+          <DialogHeader>
+            <DialogTitle>Translate Story</DialogTitle>
+            <DialogDescription>
+              Create a new story with all content translated to your selected language.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Target Language</label>
+              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                <SelectTrigger data-testid="language-select">
+                  <SelectValue placeholder="Select a language..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem key={lang} value={lang} data-testid={`lang-option-${lang}`}>
+                      {lang}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+              <p><strong>What will be translated:</strong></p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Story title and description</li>
+                <li>All chapter names</li>
+                <li>All text content blocks ({chapters.reduce((acc, ch) => acc + (ch.content_blocks || []).filter(b => b.type === 'text').length, 0)} total)</li>
+              </ul>
+              <p className="mt-2">Media files (images, audio, video) will be kept as-is.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTranslateDialog(false)} disabled={translating}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleTranslate} 
+              disabled={!selectedLanguage || translating}
+              data-testid="confirm-translate-btn"
+            >
+              {translating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Translating...
+                </>
+              ) : (
+                <>
+                  <Languages className="w-4 h-4 mr-2" />
+                  Translate Story
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
