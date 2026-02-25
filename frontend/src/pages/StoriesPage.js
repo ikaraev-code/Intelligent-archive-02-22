@@ -1092,9 +1092,10 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                 )}
               </div>
               
-              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground text-center">
-                <p>Audio generation runs in the background.</p>
-                <p>The file will download automatically when ready.</p>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-700 text-center space-y-1">
+                <p className="font-medium">Please stay on this story page</p>
+                <p>Navigating away will cancel the download.</p>
+                <p className="text-muted-foreground">Generation takes 2-5 minutes for long stories.</p>
               </div>
             </div>
           ) : (
