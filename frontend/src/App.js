@@ -97,7 +97,7 @@ function App() {
       case "projects":
         return <ProjectsPage key={pageData._resetKey || 'projects'} />;
       case "stories":
-        return <StoriesPage />;
+        return <StoriesPage key={pageData._resetKey || 'stories'} />;
       default:
         return <DashboardPage onNavigate={handleNavigate} />;
     }
