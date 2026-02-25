@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, LayoutDashboard, Upload, FolderOpen, Search, LogOut, Menu, X, MessageSquare, FolderKanban } from "lucide-react";
+import { Archive, LayoutDashboard, Upload, FolderOpen, Search, LogOut, Menu, X, MessageSquare, FolderKanban, BookOpen } from "lucide-react";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 
