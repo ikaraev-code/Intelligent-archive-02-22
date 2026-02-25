@@ -96,6 +96,8 @@ function App() {
         return <AIChatPage />;
       case "projects":
         return <ProjectsPage key={pageData._resetKey || 'projects'} />;
+      case "stories":
+        return <StoriesPage />;
       default:
         return <DashboardPage onNavigate={handleNavigate} />;
     }
