@@ -1011,6 +1011,129 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Audio Export Dialog */}
+      <Dialog open={showAudioDialog} onOpenChange={setShowAudioDialog}>
+        <DialogContent className="max-w-md" data-testid="audio-export-dialog">
+          <DialogHeader>
+            <DialogTitle>Export as Audio</DialogTitle>
+            <DialogDescription>
+              Convert your story to an MP3 audiobook using AI voice narration.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {exporting ? (
+            /* Progress View */
+            <div className="py-6 space-y-4">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <Headphones className="w-10 h-10 text-primary animate-pulse" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="font-medium">Generating audio with {selectedVoice}...</p>
+                  {audioProgress && (
+                    <p className="text-sm text-muted-foreground">
+                      Chapter {audioProgress.currentChapter} of {audioProgress.totalChapters}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="space-y-2">
+                <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-primary h-full transition-all duration-500 ease-out" 
+                    style={{
+                      width: audioProgress 
+                        ? `${Math.max(5, (audioProgress.charactersProcessed / audioProgress.totalCharacters) * 100)}%`
+                        : '5%'
+                    }}
+                  />
+                </div>
+                {audioProgress && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    {audioProgress.currentChapterName 
+                      ? `Processing: ${audioProgress.currentChapterName.substring(0, 35)}${audioProgress.currentChapterName.length > 35 ? '...' : ''}`
+                      : 'Processing...'}
+                  </p>
+                )}
+              </div>
+              
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground text-center">
+                <p>Audio generation runs in the background.</p>
+                <p>The file will download automatically when ready.</p>
+              </div>
+            </div>
+          ) : (
+            /* Selection View */
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Voice</label>
+                <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                  <SelectTrigger data-testid="voice-select">
+                    <SelectValue placeholder="Select a voice..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ttsOptions.voices.map((voice) => (
+                      <SelectItem key={voice.id} value={voice.id} data-testid={`voice-option-${voice.id}`}>
+                        <div className="flex flex-col">
+                          <span>{voice.name}</span>
+                          <span className="text-xs text-muted-foreground">{voice.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Quality</label>
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger data-testid="model-select">
+                    <SelectValue placeholder="Select quality..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ttsOptions.models.map((model) => (
+                      <SelectItem key={model.id} value={model.id} data-testid={`model-option-${model.id}`}>
+                        <div className="flex flex-col">
+                          <span>{model.name}</span>
+                          <span className="text-xs text-muted-foreground">{model.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                <p><strong>What will be converted:</strong></p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>All {chapters.length} chapter{chapters.length !== 1 ? 's' : ''}</li>
+                  <li>{chapters.reduce((acc, ch) => acc + (ch.content_blocks || []).filter(b => b.type === 'text').reduce((a, b) => a + (b.content?.length || 0), 0), 0).toLocaleString()} characters of text</li>
+                </ul>
+                <p className="mt-2">Images, videos, and existing audio will be skipped.</p>
+              </div>
+            </div>
+          )}
+          
+          {!exporting && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAudioDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAudioExport} 
+                disabled={!selectedVoice}
+                data-testid="confirm-audio-export-btn"
+              >
+                <Headphones className="w-4 h-4 mr-2" />
+                Export Audio
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
