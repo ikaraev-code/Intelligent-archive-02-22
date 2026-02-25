@@ -2889,8 +2889,17 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
 
     # Generate PDF bytes
     pdf_bytes = pdf.output()
+    # Sanitize filename for HTTP headers (must be ASCII)
+    import unicodedata
     story_name = story.get("name", "story").replace(" ", "_")
-    filename = f"{story_name}_preview.pdf"
+    # Transliterate to ASCII or use generic name for non-ASCII
+    try:
+        filename = story_name.encode('ascii', 'ignore').decode('ascii')
+        if not filename:
+            filename = "story"
+    except:
+        filename = "story"
+    filename = f"{filename}_preview.pdf"
 
     return Response(
         content=bytes(pdf_bytes),
