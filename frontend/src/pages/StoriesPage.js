@@ -1063,7 +1063,9 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                   <p className="font-medium">Generating audio with {selectedVoice}...</p>
                   {audioProgress && (
                     <p className="text-sm text-muted-foreground">
-                      Chapter {audioProgress.currentChapter} of {audioProgress.totalChapters}
+                      {audioProgress.currentChapter > 0 
+                        ? `Chapter ${audioProgress.currentChapter} of ${audioProgress.totalChapters}`
+                        : "Preparing..."}
                     </p>
                   )}
                 </div>
