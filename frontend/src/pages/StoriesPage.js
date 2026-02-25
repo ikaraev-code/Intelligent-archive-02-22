@@ -520,7 +520,15 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
               onTranslateSuccess(progress.new_story_id);
             }
           } else if (progress.status === "failed") {
-            throw new Error(progress.error || "Translation failed");
+            // Make error message more user-friendly
+            let errorMsg = progress.error || "Translation failed";
+            if (errorMsg.includes("Budget has been exceeded") || errorMsg.includes("budget_exceeded")) {
+              errorMsg = "API budget exceeded. Please add more credits to your Universal Key in Profile → Universal Key → Add Balance";
+            }
+            toast.error(errorMsg, { duration: 8000 });
+            setTranslationStatus("");
+            setTranslationProgress(null);
+            setTranslating(false);
           } else {
             // Still running, poll again
             setTimeout(pollProgress, 2000);
