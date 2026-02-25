@@ -60,20 +60,21 @@ Rebuild an application from GitHub repository and extend with AI-powered feature
 - **Multi-lingual**: Input can be multi-lingual, output translatable (Phase 3)
 - **Export**: PDF + Audio/TTS for full story or individual chapters (Phase 4)
 
-## Pending: Stories Phase 3 — Multi-lingual & Translation
-**Confirmed Spec (Feb 25, 2026):**
-- **UI:** "Translate" button + language dropdown next to Preview/PDF/MP3 buttons
-- **Action:** Creates a NEW independent Story with everything translated:
-  - Story name & description
-  - All chapters (names + content blocks)
-- **Languages dropdown:** EN, ES, FR, DE, ZH, JA, PT, RU, IT, AR, KO, NL, PL, TR, etc.
-- **Result:** Fully independent story in target language - can edit, add content, export PDF/MP3
-- **Multi-lingual input:** User writes in mixed languages (e.g., EN+RU), AI Scribe/Co-author responds in both, original stays mixed, translate creates single-language copy
-- **Example:** "Multex" (EN+RU mixed) → Translate to Spanish → New story "Multex (Español)" created
+## Pending: Stories Phase 3 — Multi-lingual & Translation ✅ COMPLETED
+**Implemented (Feb 25, 2026):**
+- **UI:** "Translate" button + language dropdown in story header
+- **Action:** Creates a NEW independent Story with everything translated (GPT-5.2)
+- **Languages:** 18 languages (EN, ES, FR, DE, ZH, JA, PT, RU, IT, AR, KO, NL, PL, TR, HI, SV, NO, DA)
+- **Background processing:** Progress bar, can close dialog and see banner
+- **Result:** Fully independent story - can edit, add content, export PDF/MP3
 
-## Pending: Stories Phase 4 — Export
-- PDF export (full story or individual chapters, in selected language)
-- Audio export via OpenAI TTS (full story or chapters, in selected language)
+## Pending: Stories Phase 4 — Audio Export ✅ COMPLETED
+**Implemented (Feb 25, 2026):**
+- **UI:** "Audio" button in story header, voice & quality selection dialog
+- **Voices:** 9 OpenAI voices (alloy, ash, coral, echo, fable, nova, onyx, sage, shimmer)
+- **Quality:** Standard (tts-1) or HD (tts-1-hd)
+- **Output:** MP3 file, auto-downloads when complete
+- **Known issue:** 502 proxy errors during polling - works but dialog stays blocked
 
 ## Other Backlog
 - Test with diverse file types (PDF, DOCX, images)
