@@ -345,7 +345,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
 }
 
 // ========== Story Detail View ==========
-function StoryDetailView({ story: initialStory, onBack }) {
+function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [story, setStory] = useState(initialStory);
   const [chapters, setChapters] = useState([]);
   const [selectedChapter, setSelectedChapter] = useState(null);
@@ -356,10 +356,26 @@ function StoryDetailView({ story: initialStory, onBack }) {
   const [libraryFiles, setLibraryFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const mediaInputRef = useRef(null);
+  
+  // Translation state
+  const [showTranslateDialog, setShowTranslateDialog] = useState(false);
+  const [languages, setLanguages] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     loadStory();
+    loadLanguages();
   }, []);
+  
+  const loadLanguages = async () => {
+    try {
+      const res = await storiesAPI.getLanguages();
+      setLanguages(res.data.languages || []);
+    } catch {
+      setLanguages(["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean"]);
+    }
+  };
 
   const loadStory = async () => {
     setLoading(true);
