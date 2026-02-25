@@ -2390,12 +2390,24 @@ Your role is to collaborate with the user to create compelling content.
     await db.story_messages.insert_one(user_msg)
 
     try:
-        response = await emergent_chat(
-            prompt=data.message,
-            system_prompt=system_prompt,
-            chat_history=[{"role": m["role"], "content": m["content"]} for m in history[-20:]]
-        )
+        from emergentintegrations.llm.chat import LlmChat, UserMessage as LlmUserMessage
 
+        session_id = f"story-{story_id}-{data.chapter_id or 'general'}"
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message=system_prompt
+        )
+        chat.with_model("openai", "gpt-5.2")
+
+        # Load recent history for context
+        for msg in history[-20:]:
+            if msg["role"] == "user":
+                chat.messages.append({"role": "user", "content": msg["content"]})
+            else:
+                chat.messages.append({"role": "assistant", "content": msg["content"]})
+
+        response = await chat.send_message(LlmUserMessage(text=data.message))
         assistant_content = response if isinstance(response, str) else str(response)
 
         # Save assistant message
