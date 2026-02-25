@@ -112,6 +112,12 @@ export const storiesAPI = {
   translate: (storyId, targetLanguage) =>
     api.post(`/stories/${storyId}/translate`, { target_language: targetLanguage }),
   getTranslationProgress: (taskId) => api.get(`/stories/translate-progress/${taskId}`),
+  getTtsOptions: () => api.get("/stories/tts-options"),
+  exportAudio: (storyId, voice, model, chapterId = null) =>
+    api.post(`/stories/${storyId}/export-audio`, { voice, model, chapter_id: chapterId }),
+  getAudioProgress: (taskId) => api.get(`/stories/audio-progress/${taskId}`),
+  getAudioDownloadUrl: (taskId, token) => 
+    `${api.defaults.baseURL}/stories/audio-download/${taskId}?token=${token}`,
   previewPdfUrl: (storyId, chapterId = null) => {
     const token = localStorage.getItem("archiva_token");
     let url = `${BACKEND_URL}/api/stories/${storyId}/preview-pdf?token=${token}`;
