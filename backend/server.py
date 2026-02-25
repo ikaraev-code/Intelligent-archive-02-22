@@ -2783,12 +2783,12 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=20)
     
-    # Add Unicode font (DejaVu Sans supports Cyrillic, Latin, Greek, etc.)
-    if FONTS_DIR.exists() and (FONTS_DIR / "DejaVuSans.ttf").exists():
-        pdf.add_font("DejaVu", "", str(FONTS_DIR / "DejaVuSans.ttf"))
-        pdf.add_font("DejaVu", "B", str(FONTS_DIR / "DejaVuSans-Bold.ttf"))
-        pdf.add_font("DejaVu", "I", str(FONTS_DIR / "DejaVuSans-Oblique.ttf"))
-        font_family = "DejaVu"
+    # Add Unicode font (Noto Sans supports Cyrillic, Latin, Greek, etc.)
+    if FONTS_DIR.exists() and (FONTS_DIR / "NotoSans-Regular.ttf").exists():
+        pdf.add_font("NotoSans", "", str(FONTS_DIR / "NotoSans-Regular.ttf"))
+        pdf.add_font("NotoSans", "B", str(FONTS_DIR / "NotoSans-Bold.ttf"))
+        pdf.add_font("NotoSans", "I", str(FONTS_DIR / "NotoSans-Italic.ttf"))
+        font_family = "NotoSans"
     else:
         font_family = "Helvetica"
     
