@@ -2723,10 +2723,6 @@ async def get_translation_progress(task_id: str, user=Depends(get_current_user))
     if not task:
         raise HTTPException(status_code=404, detail="Translation task not found")
     return task
-        
-    except Exception as e:
-        logger.error(f"Translation error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
 
 
 @api_router.post("/stories/{story_id}/chapters/{chapter_id}/append-blocks")
