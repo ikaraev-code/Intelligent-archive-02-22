@@ -392,6 +392,40 @@ class ProjectChatRequest(BaseModel):
     message: str
     include_file_context: bool = True
 
+# ==================== STORIES MODELS ====================
+
+class ContentBlock(BaseModel):
+    type: str  # "text", "image", "video", "audio"
+    content: Optional[str] = None  # for text blocks
+    file_id: Optional[str] = None  # for media blocks
+    url: Optional[str] = None
+    caption: Optional[str] = None
+
+class StoryCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+
+class StoryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+class ChapterCreate(BaseModel):
+    name: Optional[str] = None
+    content_blocks: List[ContentBlock] = []
+
+class ChapterUpdate(BaseModel):
+    name: Optional[str] = None
+    content_blocks: Optional[List[ContentBlock]] = None
+    order: Optional[int] = None
+
+class ChapterReorder(BaseModel):
+    chapter_ids: List[str]  # ordered list of chapter IDs
+
+class StoryChatRequest(BaseModel):
+    message: str
+    mode: str = "coauthor"  # "coauthor" or "scribe"
+    chapter_id: Optional[str] = None
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
