@@ -2536,13 +2536,17 @@ class TranslateStoryRequest(BaseModel):
     target_language: str  # e.g., "Spanish", "French", "German", etc.
 
 
+# Translation task tracking (in-memory, similar to reindex_tasks)
+translation_tasks: Dict[str, dict] = {}
+
+
 @api_router.post("/stories/{story_id}/translate")
-async def translate_story(
+async def start_translate_story(
     story_id: str,
     data: TranslateStoryRequest,
     user=Depends(get_current_user)
 ):
-    """Translate an entire story to a new language and create a new story"""
+    """Start translating a story in the background. Returns task_id for progress polling."""
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=503, detail="AI service not configured")
     
@@ -2562,6 +2566,52 @@ async def translate_story(
     if not original_chapters:
         raise HTTPException(status_code=400, detail="Story has no chapters to translate")
     
+    # Count total text blocks for progress tracking
+    total_blocks = sum(len([b for b in ch.get("content_blocks", []) if b.get("type") == "text"]) for ch in original_chapters)
+    
+    # Create task
+    task_id = str(uuid.uuid4())
+    translation_tasks[task_id] = {
+        "status": "running",
+        "target_language": data.target_language,
+        "story_name": original_story["name"],
+        "total_chapters": len(original_chapters),
+        "total_blocks": total_blocks,
+        "current_chapter": 0,
+        "current_chapter_name": "",
+        "blocks_translated": 0,
+        "new_story_id": None,
+        "new_story_name": None,
+        "error": None,
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Start background translation
+    import asyncio
+    asyncio.create_task(run_translation_task(
+        task_id, story_id, original_story, original_chapters, 
+        data.target_language, user["id"]
+    ))
+    
+    return {
+        "message": "Translation started",
+        "task_id": task_id,
+        "total_chapters": len(original_chapters),
+        "total_blocks": total_blocks
+    }
+
+
+async def run_translation_task(
+    task_id: str, 
+    story_id: str, 
+    original_story: dict, 
+    original_chapters: list, 
+    target_language: str,
+    user_id: str
+):
+    """Background task to translate a story"""
+    task = translation_tasks[task_id]
+    
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         
@@ -2573,7 +2623,7 @@ async def translate_story(
             chat = LlmChat(
                 api_key=EMERGENT_LLM_KEY,
                 session_id=f"translate-{uuid.uuid4()}",
-                system_message=f"""You are a professional translator. Translate the following text to {data.target_language}. 
+                system_message=f"""You are a professional translator. Translate the following text to {target_language}. 
                 
 Rules:
 - Maintain the original tone, style, and formatting
@@ -2584,7 +2634,7 @@ Rules:
             )
             chat.with_model("openai", "gpt-5.2")
             
-            prompt = f"Translate to {data.target_language}:\n\n{text}"
+            prompt = f"Translate to {target_language}:\n\n{text}"
             if context:
                 prompt = f"Context: {context}\n\n{prompt}"
             
@@ -2592,7 +2642,9 @@ Rules:
             return response.strip()
         
         # Translate story name and description
-        logger.info(f"Translating story '{original_story['name']}' to {data.target_language}")
+        logger.info(f"Translating story '{original_story['name']}' to {target_language}")
+        task["current_chapter_name"] = "Story title & description"
+        
         translated_name = await translate_text(original_story["name"], "This is a story title")
         translated_desc = await translate_text(original_story.get("description", ""), "This is a story description") if original_story.get("description") else ""
         
@@ -2602,20 +2654,23 @@ Rules:
         
         new_story = {
             "id": new_story_id,
-            "user_id": user["id"],
+            "user_id": user_id,
             "name": f"{translated_name}",
             "description": translated_desc,
             "created_at": now,
             "updated_at": now,
-            "source_story_id": story_id,  # Reference to original
-            "source_language": "mixed",  # Original was mixed language
-            "translated_to": data.target_language
+            "source_story_id": story_id,
+            "source_language": "mixed",
+            "translated_to": target_language
         }
         await db.stories.insert_one(new_story)
+        task["new_story_id"] = new_story_id
+        task["new_story_name"] = translated_name
         
         # Translate each chapter
-        translated_chapters = []
         for i, chapter in enumerate(original_chapters):
+            task["current_chapter"] = i + 1
+            task["current_chapter_name"] = chapter.get("name", f"Chapter {i+1}")
             logger.info(f"Translating chapter {i+1}/{len(original_chapters)}: {chapter.get('name', 'Untitled')}")
             
             # Translate chapter name
@@ -2625,11 +2680,15 @@ Rules:
             translated_blocks = []
             for block in chapter.get("content_blocks", []):
                 if block.get("type") == "text" and block.get("content"):
-                    translated_content = await translate_text(block["content"], f"From story '{original_story['name']}', chapter '{chapter.get('name', '')}'")
+                    translated_content = await translate_text(
+                        block["content"], 
+                        f"From story '{original_story['name']}', chapter '{chapter.get('name', '')}'"
+                    )
                     translated_blocks.append({
                         "type": "text",
                         "content": translated_content
                     })
+                    task["blocks_translated"] += 1
                 else:
                     # Keep non-text blocks (images, videos, audio) as-is
                     translated_blocks.append(block)
@@ -2646,17 +2705,24 @@ Rules:
                 "source_chapter_id": chapter["id"]
             }
             await db.chapters.insert_one(new_chapter)
-            translated_chapters.append({"id": new_chapter_id, "name": translated_chapter_name})
         
-        logger.info(f"Translation complete: new story '{translated_name}' with {len(translated_chapters)} chapters")
+        task["status"] = "completed"
+        task["current_chapter_name"] = ""
+        logger.info(f"Translation complete: new story '{translated_name}' with {len(original_chapters)} chapters")
         
-        return {
-            "message": f"Story translated to {data.target_language}",
-            "new_story_id": new_story_id,
-            "new_story_name": new_story["name"],
-            "chapters_translated": len(translated_chapters),
-            "translated_chapters": translated_chapters
-        }
+    except Exception as e:
+        logger.error(f"Translation task {task_id} failed: {e}", exc_info=True)
+        task["status"] = "failed"
+        task["error"] = str(e)
+
+
+@api_router.get("/stories/translate-progress/{task_id}")
+async def get_translation_progress(task_id: str, user=Depends(get_current_user)):
+    """Poll translation progress"""
+    task = translation_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Translation task not found")
+    return task
         
     except Exception as e:
         logger.error(f"Translation error: {e}", exc_info=True)
