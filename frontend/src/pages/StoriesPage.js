@@ -589,6 +589,83 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     }
   };
 
+  const handleAudioExport = async () => {
+    setExporting(true);
+    setAudioProgress(null);
+    
+    try {
+      const res = await storiesAPI.exportAudio(story.id, selectedVoice, selectedModel);
+      const taskId = res.data.task_id;
+      
+      setAudioProgress({
+        totalChapters: res.data.total_chapters,
+        totalCharacters: res.data.total_characters,
+        currentChapter: 0,
+        charactersProcessed: 0,
+        currentChapterName: "Starting..."
+      });
+      
+      // Poll for progress
+      const pollProgress = async () => {
+        try {
+          const progressRes = await storiesAPI.getAudioProgress(taskId);
+          const progress = progressRes.data;
+          
+          setAudioProgress({
+            totalChapters: progress.total_chapters,
+            totalCharacters: progress.total_characters,
+            currentChapter: progress.current_chapter,
+            charactersProcessed: progress.characters_processed,
+            currentChapterName: progress.current_chapter_name
+          });
+          
+          if (progress.status === "completed" && progress.has_audio) {
+            // Download the audio
+            const token = localStorage.getItem("archiva_token");
+            const downloadUrl = storiesAPI.getAudioDownloadUrl(taskId, token);
+            
+            // Trigger download
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = `${story.name}_${selectedVoice}.mp3`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            toast.success("Audio exported successfully!");
+            setShowAudioDialog(false);
+            setAudioProgress(null);
+            setExporting(false);
+          } else if (progress.status === "failed") {
+            let errorMsg = progress.error || "Audio export failed";
+            if (errorMsg.includes("Budget has been exceeded") || errorMsg.includes("budget_exceeded")) {
+              errorMsg = "API budget exceeded. Please add more credits to your Universal Key.";
+            }
+            toast.error(errorMsg, { duration: 8000 });
+            setAudioProgress(null);
+            setExporting(false);
+          } else {
+            // Still running, poll again
+            setTimeout(pollProgress, 2000);
+          }
+        } catch (err) {
+          console.error("Audio progress poll error:", err);
+          toast.error(err.response?.data?.detail || "Audio export failed");
+          setAudioProgress(null);
+          setExporting(false);
+        }
+      };
+      
+      setTimeout(pollProgress, 1000);
+      
+    } catch (err) {
+      console.error("Audio export error:", err);
+      toast.error(err.response?.data?.detail || "Failed to start audio export");
+      setAudioProgress(null);
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="story-detail">
       {/* Translation Progress Banner (shows when dialog is closed but translation is running) */}
