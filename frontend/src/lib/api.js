@@ -102,6 +102,16 @@ export const storiesAPI = {
     api.post(`/stories/${storyId}/chapters/${chapterId}/media`, formData, { headers: { "Content-Type": "multipart/form-data" } }),
   importFile: (storyId, chapterId, fileId) => 
     api.post(`/stories/${storyId}/chapters/${chapterId}/import-file?file_id=${fileId}`),
+  updateBlock: (storyId, chapterId, blockIndex, block) =>
+    api.put(`/stories/${storyId}/chapters/${chapterId}/blocks/${blockIndex}`, block),
+  deleteBlock: (storyId, chapterId, blockIndex) =>
+    api.delete(`/stories/${storyId}/chapters/${chapterId}/blocks/${blockIndex}`),
+  previewPdfUrl: (storyId, chapterId = null) => {
+    const token = localStorage.getItem("archiva_token");
+    let url = `${BACKEND_URL}/api/stories/${storyId}/preview-pdf?token=${token}`;
+    if (chapterId) url += `&chapter_id=${chapterId}`;
+    return url;
+  },
   getMessages: (storyId, chapterId = null) => 
     api.get(`/stories/${storyId}/messages`, { params: chapterId ? { chapter_id: chapterId } : {} }),
   chat: (storyId, message, mode = "coauthor", chapterId = null) => 
