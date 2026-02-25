@@ -616,11 +616,10 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       // Poll for progress with retry on 502
       const pollProgress = async (retryCount = 0) => {
         try {
-          console.log("Polling audio progress for task:", taskId);
           const progressRes = await storiesAPI.getAudioProgress(taskId);
           const progress = progressRes.data;
-          console.log("Audio progress:", progress);
           
+          // Reset retry count on success
           setAudioProgress({
             totalChapters: progress.total_chapters,
             totalCharacters: progress.total_characters,
@@ -630,7 +629,6 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           });
           
           if (progress.status === "completed" && progress.has_audio) {
-            console.log("Audio export completed! Triggering download...");
             // Download the audio
             const token = localStorage.getItem("archiva_token");
             const downloadUrl = storiesAPI.getAudioDownloadUrl(taskId, token);
@@ -659,18 +657,17 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             setExporting(false);
           } else {
             // Still running, poll again
-            console.log("Audio still processing, polling again in 2s...");
             setTimeout(() => pollProgress(0), 2000);
           }
         } catch (err) {
-          console.error("Audio progress poll error:", err);
-          // Retry on 502 errors (proxy timeout) up to 10 times
-          if (err.response?.status === 502 && retryCount < 10) {
-            console.log(`502 error, retrying in 3s... (attempt ${retryCount + 1}/10)`);
-            setTimeout(() => pollProgress(retryCount + 1), 3000);
+          // Silently retry on 502 errors (proxy timeout) - this is normal during heavy processing
+          if (err.response?.status === 502 && retryCount < 30) {
+            // Don't log every retry, just keep trying quietly
+            setTimeout(() => pollProgress(retryCount + 1), 2000);
             return;
           }
-          // Check if it's a 404 (task not found) - might mean server restarted
+          // Only show error after many retries or for non-502 errors
+          console.error("Audio progress poll error:", err);
           const errorMsg = err.response?.data?.detail || err.message || "Audio export polling failed";
           toast.error(`Audio export error: ${errorMsg}`, { duration: 10000 });
           setAudioProgress(null);
