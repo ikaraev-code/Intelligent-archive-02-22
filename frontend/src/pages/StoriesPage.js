@@ -362,6 +362,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [languages, setLanguages] = useState([]);
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [translating, setTranslating] = useState(false);
+  const [translationStatus, setTranslationStatus] = useState("");
 
   useEffect(() => {
     loadStory();
