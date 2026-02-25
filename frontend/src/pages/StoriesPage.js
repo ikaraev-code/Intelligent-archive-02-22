@@ -718,7 +718,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       </Dialog>
 
       {/* Translate Story Dialog */}
-      <Dialog open={showTranslateDialog} onOpenChange={setShowTranslateDialog}>
+      <Dialog open={showTranslateDialog} onOpenChange={(open) => !translating && setShowTranslateDialog(open)}>
         <DialogContent className="max-w-md" data-testid="translate-dialog">
           <DialogHeader>
             <DialogTitle>Translate Story</DialogTitle>
@@ -726,52 +726,71 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
               Create a new story with all content translated to your selected language.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Target Language</label>
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                <SelectTrigger data-testid="language-select">
-                  <SelectValue placeholder="Select a language..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((lang) => (
-                    <SelectItem key={lang} value={lang} data-testid={`lang-option-${lang}`}>
-                      {lang}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          
+          {translating ? (
+            /* Progress View */
+            <div className="py-8 space-y-4">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="font-medium">Translating to {selectedLanguage}...</p>
+                  <p className="text-sm text-muted-foreground">{translationStatus || "This may take 1-2 minutes"}</p>
+                </div>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div className="bg-primary h-full animate-pulse" style={{width: '100%'}}></div>
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Please don't close this dialog while translation is in progress.
+              </p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-              <p><strong>What will be translated:</strong></p>
-              <ul className="list-disc list-inside space-y-0.5">
-                <li>Story title and description</li>
-                <li>All chapter names</li>
-                <li>All text content blocks ({chapters.reduce((acc, ch) => acc + (ch.content_blocks || []).filter(b => b.type === 'text').length, 0)} total)</li>
-              </ul>
-              <p className="mt-2">Media files (images, audio, video) will be kept as-is.</p>
+          ) : (
+            /* Selection View */
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Target Language</label>
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger data-testid="language-select">
+                    <SelectValue placeholder="Select a language..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((lang) => (
+                      <SelectItem key={lang} value={lang} data-testid={`lang-option-${lang}`}>
+                        {lang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                <p><strong>What will be translated:</strong></p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Story title and description</li>
+                  <li>All chapter names</li>
+                  <li>All text content blocks ({chapters.reduce((acc, ch) => acc + (ch.content_blocks || []).filter(b => b.type === 'text').length, 0)} total)</li>
+                </ul>
+                <p className="mt-2">Media files (images, audio, video) will be kept as-is.</p>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTranslateDialog(false)} disabled={translating}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleTranslate} 
-              disabled={!selectedLanguage || translating}
-              data-testid="confirm-translate-btn"
-            >
-              {translating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Translating...
-                </>
-              ) : (
-                <>
-                  <Languages className="w-4 h-4 mr-2" />
-                  Translate Story
-                </>
-              )}
+          )}
+          
+          {!translating && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowTranslateDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleTranslate} 
+                disabled={!selectedLanguage}
+                data-testid="confirm-translate-btn"
+              >
+                <Languages className="w-4 h-4 mr-2" />
+                Translate Story
+              </Button>
+            </DialogFooter>
+          )}
             </Button>
           </DialogFooter>
         </DialogContent>
