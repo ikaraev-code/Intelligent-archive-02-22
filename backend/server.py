@@ -2518,6 +2518,151 @@ class AppendBlocksRequest(BaseModel):
     blocks: List[ContentBlock]
 
 
+class TranslateStoryRequest(BaseModel):
+    target_language: str  # e.g., "Spanish", "French", "German", etc.
+
+
+# Supported languages for translation
+SUPPORTED_LANGUAGES = [
+    "English", "Spanish", "French", "German", "Italian", "Portuguese", 
+    "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Dutch", 
+    "Polish", "Turkish", "Hindi", "Swedish", "Norwegian", "Danish"
+]
+
+
+@api_router.get("/stories/languages")
+async def get_supported_languages(user=Depends(get_current_user)):
+    """Get list of supported languages for translation"""
+    return {"languages": SUPPORTED_LANGUAGES}
+
+
+@api_router.post("/stories/{story_id}/translate")
+async def translate_story(
+    story_id: str,
+    data: TranslateStoryRequest,
+    user=Depends(get_current_user)
+):
+    """Translate an entire story to a new language and create a new story"""
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=503, detail="AI service not configured")
+    
+    if data.target_language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(status_code=400, detail=f"Unsupported language. Supported: {', '.join(SUPPORTED_LANGUAGES)}")
+    
+    # Get original story
+    original_story = await db.stories.find_one({"id": story_id, "user_id": user["id"]}, {"_id": 0})
+    if not original_story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    # Get all chapters
+    original_chapters = await db.chapters.find(
+        {"story_id": story_id}, {"_id": 0}
+    ).sort("order", 1).to_list(100)
+    
+    if not original_chapters:
+        raise HTTPException(status_code=400, detail="Story has no chapters to translate")
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        # Helper function to translate text
+        async def translate_text(text: str, context: str = "") -> str:
+            if not text or not text.strip():
+                return text
+            
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=f"translate-{uuid.uuid4()}",
+                system_message=f"""You are a professional translator. Translate the following text to {data.target_language}. 
+                
+Rules:
+- Maintain the original tone, style, and formatting
+- Keep proper nouns, names, and technical terms as appropriate for the target language
+- Preserve any markdown formatting, line breaks, and paragraph structure
+- Return ONLY the translated text, no explanations or notes
+- If text is already in the target language, return it as-is"""
+            )
+            chat.with_model("openai", "gpt-5.2")
+            
+            prompt = f"Translate to {data.target_language}:\n\n{text}"
+            if context:
+                prompt = f"Context: {context}\n\n{prompt}"
+            
+            response = await chat.send_message(UserMessage(text=prompt))
+            return response.strip()
+        
+        # Translate story name and description
+        logger.info(f"Translating story '{original_story['name']}' to {data.target_language}")
+        translated_name = await translate_text(original_story["name"], "This is a story title")
+        translated_desc = await translate_text(original_story.get("description", ""), "This is a story description") if original_story.get("description") else ""
+        
+        # Create new story
+        new_story_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        new_story = {
+            "id": new_story_id,
+            "user_id": user["id"],
+            "name": f"{translated_name}",
+            "description": translated_desc,
+            "created_at": now,
+            "updated_at": now,
+            "source_story_id": story_id,  # Reference to original
+            "source_language": "mixed",  # Original was mixed language
+            "translated_to": data.target_language
+        }
+        await db.stories.insert_one(new_story)
+        
+        # Translate each chapter
+        translated_chapters = []
+        for i, chapter in enumerate(original_chapters):
+            logger.info(f"Translating chapter {i+1}/{len(original_chapters)}: {chapter.get('name', 'Untitled')}")
+            
+            # Translate chapter name
+            translated_chapter_name = await translate_text(chapter.get("name", f"Chapter {i+1}"), "This is a chapter title")
+            
+            # Translate content blocks
+            translated_blocks = []
+            for block in chapter.get("content_blocks", []):
+                if block.get("type") == "text" and block.get("content"):
+                    translated_content = await translate_text(block["content"], f"From story '{original_story['name']}', chapter '{chapter.get('name', '')}'")
+                    translated_blocks.append({
+                        "type": "text",
+                        "content": translated_content
+                    })
+                else:
+                    # Keep non-text blocks (images, videos, audio) as-is
+                    translated_blocks.append(block)
+            
+            new_chapter_id = str(uuid.uuid4())
+            new_chapter = {
+                "id": new_chapter_id,
+                "story_id": new_story_id,
+                "name": translated_chapter_name,
+                "order": chapter.get("order", i),
+                "content_blocks": translated_blocks,
+                "created_at": now,
+                "updated_at": now,
+                "source_chapter_id": chapter["id"]
+            }
+            await db.chapters.insert_one(new_chapter)
+            translated_chapters.append({"id": new_chapter_id, "name": translated_chapter_name})
+        
+        logger.info(f"Translation complete: new story '{translated_name}' with {len(translated_chapters)} chapters")
+        
+        return {
+            "message": f"Story translated to {data.target_language}",
+            "new_story_id": new_story_id,
+            "new_story_name": new_story["name"],
+            "chapters_translated": len(translated_chapters),
+            "translated_chapters": translated_chapters
+        }
+        
+    except Exception as e:
+        logger.error(f"Translation error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
+
+
 @api_router.post("/stories/{story_id}/chapters/{chapter_id}/append-blocks")
 async def append_content_blocks(
     story_id: str, chapter_id: str,
