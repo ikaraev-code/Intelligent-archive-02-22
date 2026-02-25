@@ -475,17 +475,24 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       return;
     }
     setTranslating(true);
+    setTranslationStatus("Starting translation...");
     try {
+      // Use longer timeout for translation (2 minutes)
       const res = await storiesAPI.translate(story.id, selectedLanguage);
+      setTranslationStatus("Translation complete!");
       toast.success(`Story translated to ${selectedLanguage}!`);
       setShowTranslateDialog(false);
       setSelectedLanguage("");
+      setTranslationStatus("");
       // Navigate to the new translated story
       if (onTranslateSuccess) {
         onTranslateSuccess(res.data.new_story_id);
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Translation failed");
+      console.error("Translation error:", err);
+      const errorDetail = err.response?.data?.detail || err.message || "Translation failed - please try again";
+      toast.error(errorDetail);
+      setTranslationStatus("");
     } finally {
       setTranslating(false);
     }
