@@ -650,7 +650,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             if (errorMsg.includes("Budget has been exceeded") || errorMsg.includes("budget_exceeded")) {
               errorMsg = "API budget exceeded. Please add more credits to your Universal Key.";
             }
-            toast.error(errorMsg, { duration: 8000 });
+            toast.error(errorMsg, { duration: 10000 });
             setAudioProgress(null);
             setAudioTaskId(null);
             setExporting(false);
@@ -660,7 +660,10 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           }
         } catch (err) {
           console.error("Audio progress poll error:", err);
-          toast.error(err.response?.data?.detail || "Audio export failed");
+          // Only show error if component is still mounted and we're still exporting
+          if (exporting) {
+            toast.error(err.response?.data?.detail || "Audio export polling failed - please try again", { duration: 8000 });
+          }
           setAudioProgress(null);
           setAudioTaskId(null);
           setExporting(false);
@@ -671,7 +674,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       
     } catch (err) {
       console.error("Audio export error:", err);
-      toast.error(err.response?.data?.detail || "Failed to start audio export");
+      toast.error(err.response?.data?.detail || "Failed to start audio export", { duration: 8000 });
       setAudioProgress(null);
       setAudioTaskId(null);
       setExporting(false);
