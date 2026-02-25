@@ -2469,6 +2469,199 @@ async def import_file_to_chapter(
     return {"message": "File content imported", "filename": file_doc.get("original_filename", "")}
 
 
+@api_router.put("/stories/{story_id}/chapters/{chapter_id}/blocks/{block_index}")
+async def update_content_block(
+    story_id: str, chapter_id: str, block_index: int,
+    block: ContentBlock,
+    user=Depends(get_current_user)
+):
+    """Update a single content block at a specific index"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    blocks = chapter.get("content_blocks", [])
+    if block_index < 0 or block_index >= len(blocks):
+        raise HTTPException(status_code=400, detail="Block index out of range")
+    blocks[block_index] = block.dict()
+    now = datetime.now(timezone.utc).isoformat()
+    await db.chapters.update_one({"id": chapter_id}, {"$set": {"content_blocks": blocks, "updated_at": now}})
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": "Block updated"}
+
+
+@api_router.delete("/stories/{story_id}/chapters/{chapter_id}/blocks/{block_index}")
+async def delete_content_block(
+    story_id: str, chapter_id: str, block_index: int,
+    user=Depends(get_current_user)
+):
+    """Delete a content block at a specific index"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    blocks = chapter.get("content_blocks", [])
+    if block_index < 0 or block_index >= len(blocks):
+        raise HTTPException(status_code=400, detail="Block index out of range")
+    blocks.pop(block_index)
+    now = datetime.now(timezone.utc).isoformat()
+    await db.chapters.update_one({"id": chapter_id}, {"$set": {"content_blocks": blocks, "updated_at": now}})
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": "Block deleted"}
+
+
+@api_router.get("/stories/{story_id}/preview-pdf")
+async def story_preview_pdf(story_id: str, chapter_id: str = None, user=Depends(get_current_user)):
+    """Generate a readable PDF preview of the story or a specific chapter"""
+    from fpdf import FPDF
+    import textwrap
+
+    def sanitize(text):
+        replacements = {
+            '\u2014': '-', '\u2013': '-', '\u2018': "'", '\u2019': "'",
+            '\u201c': '"', '\u201d': '"', '\u2026': '...', '\u2022': '-',
+            '\u00b7': '-', '\u00a0': ' ', '\u200b': '',
+            '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u25cf': '-',
+            '\u2192': '->', '\u2190': '<-', '\u00d7': 'x',
+        }
+        for k, v in replacements.items():
+            text = text.replace(k, v)
+        return text.encode('latin-1', 'replace').decode('latin-1')
+
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]}, {"_id": 0})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+
+    if chapter_id:
+        chapters = [await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})]
+        if not chapters[0]:
+            raise HTTPException(status_code=404, detail="Chapter not found")
+    else:
+        chapters = await db.chapters.find(
+            {"story_id": story_id}, {"_id": 0}
+        ).sort("order", 1).to_list(100)
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    def safe_cell(w, h, txt="", **kwargs):
+        pdf.cell(w, h, txt=sanitize(txt), **kwargs)
+
+    # Title page
+    pdf.set_font("Helvetica", "B", 24)
+    safe_cell(0, 14, txt=story.get("name", "Untitled Story"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(3)
+
+    desc = story.get("description", "")
+    if desc:
+        pdf.set_font("Helvetica", "I", 11)
+        pdf.set_text_color(100, 100, 100)
+        for line in textwrap.wrap(desc, width=85):
+            safe_cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_text_color(0, 0, 0)
+    pdf.ln(3)
+
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(120, 120, 120)
+    meta = f"Chapters: {len(chapters)}  |  Preview generated: {datetime.now(timezone.utc).strftime('%B %d, %Y')}"
+    safe_cell(0, 5, txt=meta, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(2)
+
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(8)
+
+    # Chapters
+    for ch in chapters:
+        if not ch:
+            continue
+
+        # Chapter title
+        pdf.set_font("Helvetica", "B", 16)
+        safe_cell(0, 10, txt=ch.get("name", "Untitled Chapter"), new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(4)
+
+        blocks = ch.get("content_blocks", [])
+        if not blocks:
+            pdf.set_font("Helvetica", "I", 10)
+            pdf.set_text_color(150, 150, 150)
+            safe_cell(0, 6, txt="(No content yet)", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_text_color(0, 0, 0)
+        else:
+            for block in blocks:
+                if block.get("type") == "text" and block.get("content"):
+                    pdf.set_font("Helvetica", "", 11)
+                    text = block["content"]
+                    for paragraph in text.split("\n\n"):
+                        paragraph = paragraph.strip()
+                        if not paragraph:
+                            continue
+                        for line in textwrap.wrap(paragraph, width=85):
+                            safe_cell(0, 6, txt=line, new_x="LMARGIN", new_y="NEXT")
+                        pdf.ln(3)
+
+                elif block.get("type") == "image":
+                    # Try to embed the image
+                    caption = block.get("caption", "Image")
+                    file_id = block.get("file_id")
+                    embedded = False
+                    if file_id:
+                        file_doc = await db.files.find_one({"id": file_id}, {"stored_filename": 1})
+                        if file_doc:
+                            img_path = UPLOAD_DIR / file_doc["stored_filename"]
+                            if img_path.exists():
+                                try:
+                                    pdf.image(str(img_path), w=120)
+                                    embedded = True
+                                except Exception:
+                                    pass
+                    if not embedded:
+                        pdf.set_font("Helvetica", "I", 10)
+                        pdf.set_text_color(100, 100, 100)
+                        safe_cell(0, 6, txt=f"[Image: {sanitize(caption)}]", new_x="LMARGIN", new_y="NEXT")
+                        pdf.set_text_color(0, 0, 0)
+                    if caption:
+                        pdf.set_font("Helvetica", "I", 9)
+                        pdf.set_text_color(120, 120, 120)
+                        safe_cell(0, 5, txt=sanitize(caption), new_x="LMARGIN", new_y="NEXT")
+                        pdf.set_text_color(0, 0, 0)
+                    pdf.ln(3)
+
+                elif block.get("type") in ("video", "audio"):
+                    caption = block.get("caption", block.get("type", "Media").title())
+                    pdf.set_font("Helvetica", "I", 10)
+                    pdf.set_text_color(100, 100, 100)
+                    icon = "Video" if block["type"] == "video" else "Audio"
+                    safe_cell(0, 6, txt=f"[{icon}: {sanitize(caption)}]", new_x="LMARGIN", new_y="NEXT")
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.ln(2)
+
+        # Chapter separator
+        pdf.ln(4)
+        pdf.set_draw_color(220, 220, 220)
+        pdf.line(40, pdf.get_y(), 170, pdf.get_y())
+        pdf.ln(8)
+
+    # Generate PDF bytes
+    pdf_bytes = pdf.output()
+    filename = sanitize(story.get("name", "story")) + "_preview.pdf"
+
+    return Response(
+        content=bytes(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Content-Type": "application/pdf"
+        }
+    )
+
+
 # Root API route for deployment startup checks
 @api_router.get("/")
 async def api_root():
