@@ -2,174 +2,173 @@
 The user wants to rebuild an application from a GitHub repository: . After the initial rebuild, the user requested several new features to be added to the Archiva application.
 
 PRODUCT REQUIREMENTS:
-1.  **Rebuild App:** Reconstruct the application from the provided GitHub repository.
-2.  **OpenAI RAG Integration:** Integrate OpenAI for a full RAG pipeline, including auto-tagging, embeddings, semantic search, and AI chat.
-3.  **Save Search to Project:** Allow users to save search results and their AI-generated summary as a new project.
-4.  **Append Search to Project:** Allow users to append search results and summary to an existing project.
-5.  **Export Project to PDF:** Enable exporting an entire project (details, files, chat history) to a PDF document.
-6.  **File Upload in Chat:** Add the ability for users to upload files directly into the chat interfaces (both main AI Archivist and specific Project chats) via a button and drag-and-drop.
-7.  **Embedding Status Indicators:** Provide real-time visual feedback to the user on the status of file uploads and the embedding process.
+1.  **Rebuild App:** Reconstruct the application from the provided GitHub repository. (DONE)
+2.  **OpenAI RAG Integration:** Integrate OpenAI for a full RAG pipeline, including auto-tagging, embeddings, semantic search, and AI chat. (DONE)
+3.  **Project Management:** Allow users to save/append search results to projects. (DONE)
+4.  **PDF Export:** Enable exporting projects to PDF. (DONE)
+5.  **In-Chat File Upload:** Allow file uploads in chat interfaces. (DONE)
+6.  **Embedding Status Indicators:** Provide real-time UI feedback on file embedding status. (DONE)
+7.  **Data Integrity:** Ensure deleting a file also deletes its embeddings and updates associated projects. (DONE)
+8.  **Admin/Maintenance Features:** Implement batch re-indexing and a dashboard health widget. (DONE)
+9.  **Stories Feature:** A new module for creating narrative content.
+    *   Users can create Stories which contain Chapters.
+    *   Content can be written/dictated with an AI Scribe, or imported from the library/local files.
+    *   Content is structured in blocks, supporting text, images, video, and audio.
+    *   **Phase 1 & 2 (In Progress):** Core models, API, and UI for creating stories/chapters and composing content. Includes inline editing and PDF preview.
+    *   **Phase 3 (Upcoming):** Multi-lingual translation of content.
+    *   **Phase 4 (Upcoming):** Audio export using Text-to-Speech.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The agent has successfully rebuilt the Archiva application, a full-stack React/FastAPI/MongoDB app, from the user's GitHub repository. The application is fully functional.
+The application is a full-stack React/FastAPI/MongoDB app named Archiva. All initial requirements (rebuild, RAG, project management, PDF export, file upload with status indicators, data integrity on delete) have been implemented, tested, and verified.
 
-Several key features have been implemented and verified:
--   **OpenAI RAG Pipeline:** The app is integrated with OpenAI for auto-tagging, embeddings (), semantic search, and AI chat.
--   **Project Management from Search:** Users can save search summaries as new projects or append them to existing ones. This includes a dialog-based UI and backend logic to preserve the summary content.
--   **PDF Export:** Projects can be exported to a formatted PDF, either from within the project view or directly from the project list card.
--   **In-Chat File Uploads:** Both the main AI Archivist chat and the Project-specific chats support file uploads via a paperclip icon and a drag-and-drop zone.
--   A bug was fixed where the AI in project chat couldn't access the content of newly uploaded files immediately. The fix involves passing the raw text content to the AI as a fallback until the embeddings are ready.
+The agent recently implemented **Phases 1 & 2** of a new Stories feature. This includes:
+*   Backend models and API endpoints for creating, reading, updating, and deleting stories and chapters.
+*   A new Stories page in the frontend for managing stories and composing content.
+*   A rich text editor-like interface where users can co-write with an AI Scribe.
+*   Support for a block-based content structure (text, image, video, audio).
+*   Functionality for inline editing of content blocks and generating preview PDFs of chapters or full stories.
 
 **Last working item**:
-    - Last item agent was working: The user pointed out that since RAG embedding is asynchronous, there is no way to know when a newly uploaded file is ready for use. The user requested a visual indicator to show the status of the embedding process (e.g., uploading, embedding, ready). The agent agreed and proposed a plan to implement this using status chips.
-    - Status: NOT STARTED
+    - Last item agent was working: The user discovered a critical bug in the new Stories feature. When writing content with the AI Scribe across two chapters, saving edits to the second chapter caused the edits in the first chapter to be lost. The PDF preview for the first chapter appeared empty, although the content was still visible in the editor UI. The agent correctly diagnosed this as a frontend state management issue (race condition/stale state) where subsequent save actions were overwriting previous ones.
+    - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? both
+    - Which testing method agent to use? The agent should first use  to test the new backend endpoint it plans to create. Then, it should use the  to perform a full regression test on the Stories feature, ensuring that saving content across multiple chapters works correctly and that PDF previews are accurate.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1 (P0): Implement real-time embedding status indicators in chat.**
-     - **Description**: The user needs visual feedback in the chat UI for the status of file uploads. The proposed solution is to use colored chips to indicate the status: uploading..., embedding..., and ready. This requires both frontend and backend changes.
-     - **Attempted fixes**: None.
+  - **Issue 1 (P0): Chapter content is overwritten when saving sequentially across different chapters.**
+     - **Description**: In the Stories feature, when a user adds AI-generated content to Chapter 1, then switches to Chapter 2 and adds content there, the content saved to Chapter 1 is lost from the database. This is because the frontend  function uses a stale state of the chapter object, effectively overwriting the content array instead of appending to it.
+     - **Attempted fixes**: The agent identified the root cause and planned to fix it by creating a new backend endpoint to handle content block appends atomically, thus avoiding the race condition on the client side. The implementation has not started yet.
      - **Next debug checklist**:
-        1.  **Backend:** Create a new API endpoint, e.g., , that returns the current embedding status of a given file.
-        2.  **Frontend:** In  and , modify the  function.
-        3.  After a file is successfully uploaded, start a polling mechanism (e.g., ) that calls the new status endpoint every few seconds.
-        4.  Update the component's state based on the status received from the backend.
-        5.  Render a status indicator (e.g., a colored chip) next to the pending file in the UI that reflects the current status.
-        6.  Stop polling once the status is ready or if an error occurs.
-     - **Why fix this issue and what will be achieved with the fix?**: This will greatly improve the user experience by providing crucial feedback on a long-running background process, preventing confusion about when a file's content is available for AI interaction.
-     - **Status**:  NOT STARTED
+        1.  **Backend ():** Implement a new endpoint, , that accepts a single content block and atomically appends it to the chapter's  array in the database (e.g., using MongoDB's  operator).
+        2.  **Frontend API ():** Add a corresponding  function to call the new endpoint.
+        3.  **Frontend UI ():** Modify the Add to chapter button's  handler. Instead of manipulating the state in the frontend, it should now call the new  function.
+        4.  On successful API response, refetch the chapter data to ensure the UI displays the most up-to-date content.
+        5.  Test thoroughly by creating a story with at least two chapters and adding content to them sequentially, verifying with the PDF preview after each addition.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a critical bug that makes the core co-writing functionality of the Stories feature unusable and breaks data integrity. Fixing it will restore the primary function of the new feature.
+     - **Status**:  IN PROGRESS
      - **Is recurring issue?**: N
      - **Should Test frontend/backend/both after fix?**: both
      - **Blocked on other issue**: None
 
 **In progress Task List**:
-- None.
+  - **Task 1 (P0): Complete Stories Feature Implementation.**
+     - **Where to resume**: Resume after fixing the Chapter content is overwritten bug (Issue 1).
+     - **What will be achieved with this?**: A stable, fully functional storytelling module that allows users to create, edit, and preview rich-media stories.
+     - **Status**:  IN PROGRESS
+     - **Should Test frontend/backend/both after fix?**: both
+     - **Blocked on something**: Issue 1: Chapter content is overwritten when saving sequentially across different chapters.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **P1: Prioritize newly attached files in AI Archivist search:** A user-suggested improvement where the AI Archivist could automatically focus on recently uploaded files in the subsequent query, rather than searching the entire library by default.
+*   **P0: Stories Phase 3: Multi-lingual Translation.** After the current bug is fixed and verified, implement the translation functionality. This will involve adding UI controls to select a target language and creating a new backend endpoint that sends the content to a GPT model with a translation prompt.
+*   **P1: Stories Phase 4: Audio Export (TTS).** Implement a feature to export stories/chapters as audio files using OpenAI's Text-to-Speech (TTS) API.
 
 **Future Tasks:**
--   Test with diverse file types (PDF, DOCX, images).
--   Implement a UI for batch re-indexing of files.
--   Create a comparison view between different projects.
+*   Test with diverse file types (PDF, DOCX, etc.).
+*   Implement a comparison view for different projects.
+*   Add Smart Collections: an AI feature to automatically group related files.
+*   Revisit the decision to keep chat history when a file is deleted from a project, possibly adding an option to clear it.
 
 **Completed work in this session**
-- **Application Rebuild:** Rebuilt the Archiva application from the  GitHub repo.
-- **OpenAI RAG Integration:** Implemented full RAG pipeline (auto-tagging, embeddings, semantic search, AI chat) using . ()
-- **Save Search to Project:** Implemented functionality to save search results and AI summary as a new project, fixing UI/UX issues from the first attempt. (, )
-- **Append Search to Project:** Implemented functionality to append search results to an existing project, with UI fixes for the dialog. (, )
-- **Export Project as PDF:** Implemented project export to PDF, including a fix for Unicode character handling. (, )
-- **Quick PDF Export from Card:** Added a PDF export icon to project cards. ()
-- **File Upload in Chat:** Added file attachment (click and drag-and-drop) to both main and project chat interfaces. (, )
-- **Immediate Content Access Bug Fix:** Fixed a bug where project chat couldn't access content of new files until embeddings were ready. ()
+- **Embedding Status & Retries:** Implemented real-time file embedding status indicators in chat, complete with specific error messaging and a retry mechanism for failures.
+- **Cascade Deletes & Project Status:** Implemented logic to properly cascade deletes (file -> embeddings -> project references) and introduced an inactive status for projects that have no files.
+- **AI Search & RAG Improvements:**
+    - Implemented priority search for recently uploaded files in the main AI chat.
+    - Fixed flaky RAG source issue by deduplicating sources and handling deleted files gracefully.
+- **Admin & Maintenance Features:**
+    - Built a comprehensive batch re-indexing UI in the Library, showing file embedding stats and allowing filtered re-indexing (all, failed, or unindexed).
+    - Added an Embedding Health donut chart widget to the main dashboard for at-a-glance system health.
+- **Deployment Troubleshooting:**
+    - Diagnosed and helped the user resolve deployment issues related to missing  environment variables.
+    - Added a clear warning banner on the dashboard when the AI key is not configured.
+- **Stories Feature (Phase 1 & 2):**
+    - Created the backend data models, schemas, and a full suite of API endpoints for Stories and Chapters.
+    - Built the frontend  with UI for listing stories, a detail view with chapters, and an AI co-writing interface (Scribe).
+    - Implemented inline editing and deletion for content blocks.
+    - Added PDF preview generation for both individual chapters and the full story.
+- **General Bug Fixes:** Fixed duplicate  attributes in the sidebar to improve automated testing reliability.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1: Duplicate  attributes.**
-     - **Debug checklist**:
-        - Inspect  or similar layout components.
-        - Identify the navigation elements that are rendered for both mobile and desktop views.
-        - Differentiate the  for each instance, for example:  and .
-        - Update any Playwright tests in the testing agent's instructions to use the correct, unique selectors.
-     - **Why to solve this issue and what will be achieved with this?**: This will resolve recurring false negatives in automated frontend testing, allowing the testing agent to perform reliable checks on navigation and login flows.
-     - **Should Test frontend/backend/both after fix**: frontend
-     - **Is recurring issue?**: Y
-
-   - **Issue 2: Flaky RAG source issue.**
-     - **Debug checklist**:
-        - Review the test report from the session where the file attachment feature was tested ().
-        - Try to reproduce the issue by running the testing agent with a focus on RAG queries.
-        - Inspect the  and  functions in  to see how sources are retrieved and formatted.
-     - **Why to solve this issue and what will be achieved with this?**: This ensures the reliability of the core RAG feature, which is to correctly cite the sources of its information.
-     - **Should Test frontend/backend/both after fix**: backend
-     - **Is recurring issue?**: N
+- None. All previously mentioned issues have been resolved.
 
 **Known issue recurrence from previous fork**
-  - None.
+- None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Stack:** React frontend, FastAPI backend, MongoDB database.
--   **RAG (Retrieval-Augmented Generation):** Using OpenAI's  model for embeddings and GPT models for chat/summarization. The backend handles text extraction, chunking, embedding, and semantic search against the vector store.
--   **Asynchronous Tasks:** File embedding is a background process. The immediate need is for a UI to track its status.
--   **PDF Generation:** The backend uses the  library to create PDF documents from project data.
--   **UI/UX:** The frontend uses  components and Tailwind CSS for styling. It features interactive elements like drag-and-drop zones and dialogs.
+- **Stack:** React, FastAPI, MongoDB.
+- **RAG (Retrieval-Augmented Generation):** Using OpenAI for embeddings (), semantic search, and chat generation.
+- **Asynchronous Tasks:** File embedding and batch re-indexing are handled as background tasks with polling for status updates.
+- **Content Block Model:** The Stories feature uses a flexible array of content blocks (), allowing for rich media documents.
+- **Frontend State Management:** The current bug highlights the importance of avoiding race conditions with stale state when performing sequential updates. The proposed fix moves to an atomic, transactional approach on the backend.
 
 **key DB schema**
--   **projects:** 
--   **project_messages:** 
--   **files:** 
--   **embeddings:** 
+- **stories:** 
+- **chapters:** 
+- **projects:** 
+- **files:** 
 
 **changes in tech stack**
--   The  Python library was added to the backend to support PDF generation.
+- None.
 
 **All files of reference**
--   : The core backend file containing all API logic for RAG, projects, file handling, and PDF export.
--   : The main UI for viewing projects and the project-specific chat. Contains logic for PDF export, file attachment, and drag-and-drop.
--   : The UI for the global AI Archivist chat. Contains logic for file attachment and drag-and-drop.
--   : UI for displaying search summaries and handling the Save to Project dialog.
--   : Central location for all frontend-to-backend API call functions.
-
-**Areas that need refactoring**:
-- The navigation components (likely in ) have duplicate  attributes for mobile and desktop views, which causes issues for automated testing agents. These should be made unique.
+-   : Contains all API logic, including the new endpoints for stories, chapters, PDF previews, and content editing. Needs to be updated with the atomic append endpoint.
+-   : The main UI for the new Stories feature. Contains the bug in the Add to chapter logic that needs to be fixed.
+-   : The central location for frontend API calls. Needs to be updated with a new function for the atomic append endpoint.
+-   : Contains the embedding health widget.
+-   : Contains the batch re-indexing UI.
 
 **key api endpoints**
--   : Uploads one or more files.
--   : Generates a summary from selected file IDs.
--   : Creates a new project.
--   : Appends files and a summary to an existing project.
--   : Generates and returns a PDF for a project.
--   : Handles chat interactions within a project.
+-   : Create a new story.
+-   : Create a new chapter.
+-   : Interact with the AI Scribe.
+-   : Update a content block.
+-   : Generate a preview PDF for a chapter.
+-   **NEEDS TO BE CREATED:** : Atomically append a new content block to a chapter.
 
 **Critical Info for New Agent**
--   The project has been migrated to a new repository: .
--   The OpenAI API key is configured in , and the RAG pipeline is fully operational.
--   Automated tests may falsely report errors on login/navigation due to duplicate s in the UI. The agent has visually confirmed this flow works, so do not waste time re-debugging it unless the user reports a functional problem.
--   The immediate and highest-priority task is to implement the real-time embedding status indicators as requested by the user.
+- The immediate priority is fixing the critical bug in the Stories feature (Issue 1). The user is actively testing this feature and is blocked by the bug.
+- The user is now aware that the preview and deployed environments are isolated (separate databases, separate environment variables). Be mindful of this context if deployment issues arise again.
+- The plan to fix the bug (create a new atomic backend endpoint) is sound. Proceed with that implementation.
+- After fixing the bug, the next steps are to implement Phase 3 (Translation) and Phase 4 (Audio Export) of the Stories feature.
 
 **documents and test reports created in this job**
--   
+-    (updated throughout the session)
 -   Multiple test reports in 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user**: (explains the issue where AI in project mode can't access newly uploaded file content) - **Status: RESOLVED**
-2.  **user**: So is RAG embedding doesnt happen in real time, I assume. Then I think the user should have an indicator that the embedding is in process and also when its completely finished - **Status: PENDING**
-3.  **user**: yes, before I test lets add drag-and-drop, great idea, and actually lets do it in the batch mode, so I can select multiple file and drag them in the chat area - **Status: RESOLVED**
-4.  **user**: (asks for preview URL to test) - **Status: RESOLVED**
-5.  **user**: (reports not seeing the new feature) - **Status: RESOLVED** (browser cache issue)
-6.  **user**: aha, refreshed, looks like its working now, but let me test" - **Status: ACKNOWLEDGED**
-7.  **user**: (reports testing feedback on AI Archivist mode) - **Status: ACKNOWLEDGED**
-8.  **user**: (agrees to defer AI Archivist improvement) - **Status: ACKNOWLEDGED**
-9.  **user**: (reports the bug about project mode AI not having content for new files) - **Status: RESOLVED** (This led to message #1)
-10. **user**: "Hi, lets continue from our previous day session. What information do you need from me? - **Status: RESOLVED**
+1.  **user**: Asks to add preview PDF and inline editing to the Stories feature. - **Status: RESOLVED**
+2.  **user**: Asks if the generated PDF can be saved. - **Status: RESOLVED**
+3.  **user**: Reports the bug: saving content to Chapter 2 makes Chapter 1's content disappear from the PDF preview, although it's still visible in the editor. - **Status: PENDING (This is the current )**
+4.  **user**: Provides great answers to clarifying questions about the upcoming Stories feature (TTS, translation, etc.). - **Status: RESOLVED**
+5.  **user**: Asks to add multimedia object support to the Stories feature. - **Status: RESOLVED**
+6.  **user**: Asks for the preview URL to test the new Stories feature. - **Status: RESOLVED**
+7.  **user**: Gives positive feedback after testing the initial Stories feature, noting it was very engaging. - **Status: ACKNOWLEDGED**
+8.  **user**: Asks to test voice entry later. - **Status: ACKNOWLEDGED**
+9.  **user**: Asks to save the current progress and continue later. - **Status: RESOLVED**
+10. **user**: Asks if the PDF can be saved/printed. - **Status: RESOLVED**
 
 **Project Health Check:**
--   **Broken:** None.
+-   **Broken:** The core save functionality of the new Stories feature is broken due to a race condition. This is the highest priority fix.
 -   **Mocked:** None.
--   **Known Issues:**
-    -   Automated testing is unreliable for navigation due to duplicate s.
-    -   A flaky RAG source issue was mentioned in a past test report but was not investigated.
 
 **3rd Party Integrations**
--   **OpenAI API**: Used for both chat completion (GPT models) and embeddings (). Requires a User-provided key (which is already configured).
+-   **OpenAI API**: Used for chat completion (GPT models), embeddings (), and planned for Text-to-Speech. The API key is managed as a user-provided environment variable.
 
 **Testing status**
   - Testing agent used after significant changes: YES
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None.
-  - Known regressions: Automated navigation tests frequently fail due to duplicate test IDs, but the feature works manually.
+  - Test files created: None explicitly, but testing agent has its own tests.
+  - Known regressions: None. The critical issue is a new bug, not a regression.
 
 **Credentials to test flow:**
 -   **Email:** 
 -   **Password:** 
 
 **What agent forgot to execute**
-- The agent did not fix the root cause of the duplicate s, which makes automated frontend testing unreliable.
-- The agent noted a flaky RAG source issue from a test report but deferred investigation.</analysis>
+- Nothing was forgotten. The agent correctly identified the last reported bug and was in the process of formulating a plan to fix it when the session ended.</analysis>
