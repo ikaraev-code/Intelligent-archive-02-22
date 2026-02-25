@@ -791,8 +791,6 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
               </Button>
             </DialogFooter>
           )}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
