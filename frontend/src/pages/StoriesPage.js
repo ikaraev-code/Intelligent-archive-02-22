@@ -778,22 +778,46 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           
           {translating ? (
             /* Progress View */
-            <div className="py-8 space-y-4">
+            <div className="py-6 space-y-4">
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
-                  <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                  <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 </div>
                 <div className="text-center space-y-1">
                   <p className="font-medium">Translating to {selectedLanguage}...</p>
-                  <p className="text-sm text-muted-foreground">{translationStatus || "This may take 1-2 minutes"}</p>
+                  {translationProgress && (
+                    <p className="text-sm text-muted-foreground">
+                      Chapter {translationProgress.currentChapter} of {translationProgress.totalChapters}
+                    </p>
+                  )}
                 </div>
               </div>
-              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                <div className="bg-primary h-full animate-pulse" style={{width: '100%'}}></div>
+              
+              {/* Progress bar */}
+              <div className="space-y-2">
+                <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-primary h-full transition-all duration-500 ease-out" 
+                    style={{
+                      width: translationProgress 
+                        ? `${Math.max(5, (translationProgress.currentChapter / translationProgress.totalChapters) * 100)}%`
+                        : '5%'
+                    }}
+                  />
+                </div>
+                {translationProgress && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    {translationProgress.currentChapterName 
+                      ? `Translating: ${translationProgress.currentChapterName.substring(0, 40)}${translationProgress.currentChapterName.length > 40 ? '...' : ''}`
+                      : 'Processing...'}
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-center text-muted-foreground">
-                Please don't close this dialog while translation is in progress.
-              </p>
+              
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground text-center">
+                <p>Translation runs in the background.</p>
+                <p>You can close this dialog - it will continue processing.</p>
+              </div>
             </div>
           ) : (
             /* Selection View */
