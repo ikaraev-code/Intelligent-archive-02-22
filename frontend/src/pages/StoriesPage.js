@@ -540,6 +540,24 @@ function StoryDetailView({ story: initialStory, onBack }) {
               <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={openImportDialog} data-testid="import-file-btn">
                 <Import className="w-3 h-3" /> Import
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => window.open(storiesAPI.previewPdfUrl(story.id, selectedChapter.id), "_blank")}
+                data-testid="preview-chapter-pdf-btn"
+              >
+                <Eye className="w-3 h-3" /> Preview
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => window.open(storiesAPI.previewPdfUrl(story.id), "_blank")}
+                data-testid="preview-story-pdf-btn"
+              >
+                <FileDown className="w-3 h-3" /> Full PDF
+              </Button>
             </div>
 
             {/* Split: Content Preview + Chat */}
