@@ -366,9 +366,18 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [translationStatus, setTranslationStatus] = useState("");
   const [translationProgress, setTranslationProgress] = useState(null);
 
+  // Audio export state
+  const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [ttsOptions, setTtsOptions] = useState({ voices: [], models: [] });
+  const [selectedVoice, setSelectedVoice] = useState("nova");
+  const [selectedModel, setSelectedModel] = useState("tts-1");
+  const [exporting, setExporting] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(null);
+
   useEffect(() => {
     loadStory();
     loadLanguages();
+    loadTtsOptions();
   }, []);
   
   const loadLanguages = async () => {
@@ -377,6 +386,29 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       setLanguages(res.data.languages || []);
     } catch {
       setLanguages(["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean"]);
+    }
+  };
+
+  const loadTtsOptions = async () => {
+    try {
+      const res = await storiesAPI.getTtsOptions();
+      setTtsOptions(res.data);
+    } catch {
+      // Fallback options
+      setTtsOptions({
+        voices: [
+          { id: "nova", name: "Nova", description: "Energetic, upbeat" },
+          { id: "alloy", name: "Alloy", description: "Neutral, balanced" },
+          { id: "echo", name: "Echo", description: "Smooth, calm" },
+          { id: "fable", name: "Fable", description: "Expressive, storytelling" },
+          { id: "onyx", name: "Onyx", description: "Deep, authoritative" },
+          { id: "shimmer", name: "Shimmer", description: "Bright, cheerful" },
+        ],
+        models: [
+          { id: "tts-1", name: "Standard", description: "Fast, good quality" },
+          { id: "tts-1-hd", name: "HD", description: "High definition, slower" },
+        ]
+      });
     }
   };
 
