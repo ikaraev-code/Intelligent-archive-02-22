@@ -699,6 +699,15 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           variant="outline" 
           size="sm" 
           className="h-8 text-xs gap-1.5"
+          onClick={() => setShowAudioDialog(true)}
+          data-testid="export-audio-btn"
+        >
+          <Headphones className="w-3.5 h-3.5" /> Audio
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 text-xs gap-1.5"
           onClick={() => setShowTranslateDialog(true)}
           data-testid="translate-story-btn"
         >
