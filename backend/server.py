@@ -2515,8 +2515,18 @@ async def delete_content_block(
 
 
 @api_router.get("/stories/{story_id}/preview-pdf")
-async def story_preview_pdf(story_id: str, chapter_id: str = None, user=Depends(get_current_user)):
+async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Optional[str] = None, credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
     """Generate a readable PDF preview of the story or a specific chapter"""
+    # Auth from header or query param
+    auth_token = credentials.credentials if credentials else token
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        payload = jwt.decode(auth_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload["user_id"]
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
     from fpdf import FPDF
     import textwrap
 
