@@ -616,8 +616,10 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       // Poll for progress
       const pollProgress = async () => {
         try {
+          console.log("Polling audio progress for task:", taskId);
           const progressRes = await storiesAPI.getAudioProgress(taskId);
           const progress = progressRes.data;
+          console.log("Audio progress:", progress);
           
           setAudioProgress({
             totalChapters: progress.total_chapters,
@@ -628,6 +630,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           });
           
           if (progress.status === "completed" && progress.has_audio) {
+            console.log("Audio export completed! Triggering download...");
             // Download the audio
             const token = localStorage.getItem("archiva_token");
             const downloadUrl = storiesAPI.getAudioDownloadUrl(taskId, token);
@@ -640,7 +643,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             a.click();
             document.body.removeChild(a);
             
-            toast.success("Audio exported successfully!");
+            toast.success("Audio exported successfully! Check your downloads.", { duration: 10000 });
             setShowAudioDialog(false);
             setAudioProgress(null);
             setAudioTaskId(null);
@@ -656,14 +659,14 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             setExporting(false);
           } else {
             // Still running, poll again
+            console.log("Audio still processing, polling again in 2s...");
             setTimeout(pollProgress, 2000);
           }
         } catch (err) {
           console.error("Audio progress poll error:", err);
-          // Only show error if component is still mounted and we're still exporting
-          if (exporting) {
-            toast.error(err.response?.data?.detail || "Audio export polling failed - please try again", { duration: 8000 });
-          }
+          // Check if it's a 404 (task not found) - might mean server restarted
+          const errorMsg = err.response?.data?.detail || err.message || "Audio export polling failed";
+          toast.error(`Audio export error: ${errorMsg}`, { duration: 10000 });
           setAudioProgress(null);
           setAudioTaskId(null);
           setExporting(false);
