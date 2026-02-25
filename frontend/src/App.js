@@ -9,6 +9,7 @@ import ArticlePage from "./pages/ArticlePage";
 import FileDetailPage from "./pages/FileDetailPage";
 import AIChatPage from "./pages/AIChatPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import StoriesPage from "./pages/StoriesPage";
 import { Sidebar } from "./components/Sidebar";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { Toaster } from "./components/ui/sonner";
