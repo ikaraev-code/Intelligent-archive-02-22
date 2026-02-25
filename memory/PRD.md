@@ -57,9 +57,15 @@ Rebuild an application from GitHub repository and extend with AI-powered feature
 - **Export**: PDF + Audio/TTS for full story or individual chapters (Phase 4)
 
 ## Pending: Stories Phase 3 — Multi-lingual & Translation
-- Auto-detect input languages per chapter
-- Translation output selector (translate via GPT)
-- Preview translated content before export
+**Confirmed Spec (Feb 25, 2026):**
+- **UI:** "Translate" button + language dropdown next to Preview/PDF/MP3 buttons
+- **Action:** Creates a NEW independent Story with everything translated:
+  - Story name & description
+  - All chapters (names + content blocks)
+- **Languages dropdown:** EN, ES, FR, DE, ZH, JA, PT, RU, IT, AR, KO, NL, PL, TR, etc.
+- **Result:** Fully independent story in target language - can edit, add content, export PDF/MP3
+- **Multi-lingual input:** User writes in mixed languages (e.g., EN+RU), AI Scribe/Co-author responds in both, original stays mixed, translate creates single-language copy
+- **Example:** "Multex" (EN+RU mixed) → Translate to Spanish → New story "Multex (Español)" created
 
 ## Pending: Stories Phase 4 — Export
 - PDF export (full story or individual chapters, in selected language)
