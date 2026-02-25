@@ -1,7 +1,7 @@
 # Archiva - Intelligent Multimedia Archive
 
 ## Session Status (Feb 25, 2026)
-**Last Active:** User taking a break, will return later
+**Last Active:** Phase 3 & 4 implemented
 **User Account:** ikaraev@alfangen.com (has story "Multex" with 2 chapters)
 **Preview URL:** https://stories-chapter-bug.preview.emergentagent.com
 
@@ -9,10 +9,14 @@
 - ✅ Fixed critical race condition bug (chapter content overwrite)
 - ✅ Improved edit window size (300px min-height, resizable)
 - ✅ Added delete confirmation dialog for content blocks
+- ✅ **Phase 3: Translation** - Translate entire story to new language (creates independent copy)
+- ✅ **Phase 4: Audio Export (TTS)** - Export story as MP3 using OpenAI voices
+- ✅ Fixed PDF Unicode support (Cyrillic/Russian text now renders correctly)
+- ✅ Fixed Stories nav click to return to list view
 
-### Ready for Next Session:
-- Phase 3: Multi-lingual Translation
-- Phase 4: Audio Export (TTS)
+### Known Issues:
+- **Audio Export UI blocking**: 502 proxy errors during TTS polling cause dialog to stay blocked. Audio generates successfully but progress polling is unreliable. Works but UX needs improvement.
+  - **Potential fixes**: Store task status in DB, use WebSockets, or Server-Sent Events
 
 ---
 
