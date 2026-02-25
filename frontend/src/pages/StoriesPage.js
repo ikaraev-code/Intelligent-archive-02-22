@@ -613,8 +613,8 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
         currentChapterName: "Starting..."
       });
       
-      // Poll for progress
-      const pollProgress = async () => {
+      // Poll for progress with retry on 502
+      const pollProgress = async (retryCount = 0) => {
         try {
           console.log("Polling audio progress for task:", taskId);
           const progressRes = await storiesAPI.getAudioProgress(taskId);
@@ -660,10 +660,16 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           } else {
             // Still running, poll again
             console.log("Audio still processing, polling again in 2s...");
-            setTimeout(pollProgress, 2000);
+            setTimeout(() => pollProgress(0), 2000);
           }
         } catch (err) {
           console.error("Audio progress poll error:", err);
+          // Retry on 502 errors (proxy timeout) up to 10 times
+          if (err.response?.status === 502 && retryCount < 10) {
+            console.log(`502 error, retrying in 3s... (attempt ${retryCount + 1}/10)`);
+            setTimeout(() => pollProgress(retryCount + 1), 3000);
+            return;
+          }
           // Check if it's a 404 (task not found) - might mean server restarted
           const errorMsg = err.response?.data?.detail || err.message || "Audio export polling failed";
           toast.error(`Audio export error: ${errorMsg}`, { duration: 10000 });
