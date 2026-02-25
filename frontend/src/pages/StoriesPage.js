@@ -636,6 +636,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             toast.success("Audio exported successfully!");
             setShowAudioDialog(false);
             setAudioProgress(null);
+            setAudioTaskId(null);
             setExporting(false);
           } else if (progress.status === "failed") {
             let errorMsg = progress.error || "Audio export failed";
@@ -644,6 +645,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             }
             toast.error(errorMsg, { duration: 8000 });
             setAudioProgress(null);
+            setAudioTaskId(null);
             setExporting(false);
           } else {
             // Still running, poll again
@@ -653,6 +655,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           console.error("Audio progress poll error:", err);
           toast.error(err.response?.data?.detail || "Audio export failed");
           setAudioProgress(null);
+          setAudioTaskId(null);
           setExporting(false);
         }
       };
@@ -663,6 +666,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       console.error("Audio export error:", err);
       toast.error(err.response?.data?.detail || "Failed to start audio export");
       setAudioProgress(null);
+      setAudioTaskId(null);
       setExporting(false);
     }
   };
@@ -681,6 +685,24 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             <p className="text-sm font-medium text-primary">
               Translating to {selectedLanguage}...
               {translationProgress && ` (Chapter ${translationProgress.currentChapter}/${translationProgress.totalChapters})`}
+            </p>
+          </div>
+          <span className="text-xs text-muted-foreground">Click to view progress</span>
+        </div>
+      )}
+
+      {/* Audio Export Progress Banner (shows when dialog is closed but export is running) */}
+      {exporting && !showAudioDialog && (
+        <div 
+          className="bg-orange-500/10 border-b border-orange-500/20 px-4 py-2 flex items-center gap-3 cursor-pointer hover:bg-orange-500/15 transition-colors"
+          onClick={() => setShowAudioDialog(true)}
+          data-testid="audio-progress-banner"
+        >
+          <Headphones className="w-4 h-4 text-orange-600 animate-pulse" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-orange-600">
+              Generating audio...
+              {audioProgress && ` (Chapter ${audioProgress.currentChapter}/${audioProgress.totalChapters})`}
             </p>
           </div>
           <span className="text-xs text-muted-foreground">Click to view progress</span>
