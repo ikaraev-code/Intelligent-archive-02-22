@@ -106,6 +106,8 @@ export const storiesAPI = {
     api.put(`/stories/${storyId}/chapters/${chapterId}/blocks/${blockIndex}`, block),
   deleteBlock: (storyId, chapterId, blockIndex) =>
     api.delete(`/stories/${storyId}/chapters/${chapterId}/blocks/${blockIndex}`),
+  appendContentBlock: (storyId, chapterId, block) =>
+    api.post(`/stories/${storyId}/chapters/${chapterId}/append-blocks`, { blocks: [block] }),
   previewPdfUrl: (storyId, chapterId = null) => {
     const token = localStorage.getItem("archiva_token");
     let url = `${BACKEND_URL}/api/stories/${storyId}/preview-pdf?token=${token}`;

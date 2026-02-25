@@ -89,9 +89,8 @@ function ChapterChat({ story, chapter, onContentUpdate }) {
   const applyToChapter = async (content) => {
     if (!chapter) return;
     try {
-      const existingBlocks = chapter.content_blocks || [];
-      const newBlocks = [...existingBlocks, { type: "text", content }];
-      await storiesAPI.updateChapter(story.id, chapter.id, { content_blocks: newBlocks });
+      // Use atomic append endpoint to avoid race conditions with stale state
+      await storiesAPI.appendContentBlock(story.id, chapter.id, { type: "text", content });
       toast.success("Content added to chapter");
       if (onContentUpdate) onContentUpdate();
     } catch {
