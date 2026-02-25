@@ -2911,6 +2911,255 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
     )
 
 
+# ========== Audio Export (TTS) ==========
+
+TTS_VOICES = ["alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"]
+TTS_MODELS = ["tts-1", "tts-1-hd"]
+
+
+class ExportAudioRequest(BaseModel):
+    voice: str = "nova"  # Default to nova (energetic, upbeat - good for stories)
+    model: str = "tts-1"  # Standard quality, faster
+    chapter_id: Optional[str] = None  # If None, export entire story
+
+
+# Audio export task tracking
+audio_export_tasks: Dict[str, dict] = {}
+
+
+@api_router.get("/stories/tts-options")
+async def get_tts_options(user=Depends(get_current_user)):
+    """Get available TTS voices and models"""
+    return {
+        "voices": [
+            {"id": "alloy", "name": "Alloy", "description": "Neutral, balanced"},
+            {"id": "ash", "name": "Ash", "description": "Clear, articulate"},
+            {"id": "coral", "name": "Coral", "description": "Warm, friendly"},
+            {"id": "echo", "name": "Echo", "description": "Smooth, calm"},
+            {"id": "fable", "name": "Fable", "description": "Expressive, storytelling"},
+            {"id": "nova", "name": "Nova", "description": "Energetic, upbeat"},
+            {"id": "onyx", "name": "Onyx", "description": "Deep, authoritative"},
+            {"id": "sage", "name": "Sage", "description": "Wise, measured"},
+            {"id": "shimmer", "name": "Shimmer", "description": "Bright, cheerful"},
+        ],
+        "models": [
+            {"id": "tts-1", "name": "Standard", "description": "Fast, good quality"},
+            {"id": "tts-1-hd", "name": "HD", "description": "High definition, slower"},
+        ]
+    }
+
+
+@api_router.post("/stories/{story_id}/export-audio")
+async def start_audio_export(
+    story_id: str,
+    data: ExportAudioRequest,
+    user=Depends(get_current_user)
+):
+    """Start audio export as background task"""
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=503, detail="AI service not configured")
+    
+    if data.voice not in TTS_VOICES:
+        raise HTTPException(status_code=400, detail=f"Invalid voice. Available: {', '.join(TTS_VOICES)}")
+    
+    if data.model not in TTS_MODELS:
+        raise HTTPException(status_code=400, detail=f"Invalid model. Available: {', '.join(TTS_MODELS)}")
+    
+    # Get story
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]}, {"_id": 0})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    # Get chapters
+    if data.chapter_id:
+        chapters = [await db.chapters.find_one({"id": data.chapter_id, "story_id": story_id}, {"_id": 0})]
+        if not chapters[0]:
+            raise HTTPException(status_code=404, detail="Chapter not found")
+    else:
+        chapters = await db.chapters.find(
+            {"story_id": story_id}, {"_id": 0}
+        ).sort("order", 1).to_list(100)
+    
+    if not chapters:
+        raise HTTPException(status_code=400, detail="No chapters to export")
+    
+    # Calculate total text length
+    total_text = ""
+    for ch in chapters:
+        for block in ch.get("content_blocks", []):
+            if block.get("type") == "text" and block.get("content"):
+                total_text += block["content"] + "\n\n"
+    
+    if not total_text.strip():
+        raise HTTPException(status_code=400, detail="No text content to convert to audio")
+    
+    # Create task
+    task_id = str(uuid.uuid4())
+    audio_export_tasks[task_id] = {
+        "status": "running",
+        "story_name": story["name"],
+        "voice": data.voice,
+        "model": data.model,
+        "total_chapters": len(chapters),
+        "current_chapter": 0,
+        "current_chapter_name": "",
+        "total_characters": len(total_text),
+        "characters_processed": 0,
+        "audio_data": None,
+        "error": None,
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Start background task
+    import asyncio
+    asyncio.create_task(run_audio_export_task(
+        task_id, story, chapters, data.voice, data.model
+    ))
+    
+    return {
+        "message": "Audio export started",
+        "task_id": task_id,
+        "total_chapters": len(chapters),
+        "total_characters": len(total_text),
+        "estimated_duration_seconds": len(total_text) // 15  # Rough estimate: ~15 chars/sec
+    }
+
+
+async def run_audio_export_task(
+    task_id: str,
+    story: dict,
+    chapters: list,
+    voice: str,
+    model: str
+):
+    """Background task to generate audio from story text"""
+    task = audio_export_tasks[task_id]
+    
+    try:
+        from emergentintegrations.llm.openai import OpenAITextToSpeech
+        
+        tts = OpenAITextToSpeech(api_key=EMERGENT_LLM_KEY)
+        
+        all_audio_chunks = []
+        
+        for i, chapter in enumerate(chapters):
+            task["current_chapter"] = i + 1
+            task["current_chapter_name"] = chapter.get("name", f"Chapter {i+1}")
+            logger.info(f"Processing audio for chapter {i+1}/{len(chapters)}: {chapter.get('name', 'Untitled')}")
+            
+            # Collect all text from chapter
+            chapter_text = ""
+            for block in chapter.get("content_blocks", []):
+                if block.get("type") == "text" and block.get("content"):
+                    chapter_text += block["content"] + "\n\n"
+            
+            if not chapter_text.strip():
+                continue
+            
+            # Split into chunks of 4000 chars (leaving buffer from 4096 limit)
+            chunks = []
+            current_chunk = ""
+            for paragraph in chapter_text.split("\n\n"):
+                if len(current_chunk) + len(paragraph) + 2 > 4000:
+                    if current_chunk:
+                        chunks.append(current_chunk.strip())
+                    current_chunk = paragraph
+                else:
+                    current_chunk += "\n\n" + paragraph if current_chunk else paragraph
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            
+            # Generate audio for each chunk
+            for chunk in chunks:
+                if not chunk.strip():
+                    continue
+                audio_bytes = await tts.generate_speech(
+                    text=chunk,
+                    model=model,
+                    voice=voice,
+                    response_format="mp3"
+                )
+                all_audio_chunks.append(audio_bytes)
+                task["characters_processed"] += len(chunk)
+        
+        # Concatenate all MP3 chunks
+        if all_audio_chunks:
+            # Simple concatenation for MP3 (works for same encoding settings)
+            combined_audio = b"".join(all_audio_chunks)
+            
+            # Store as base64 for retrieval
+            import base64
+            task["audio_data"] = base64.b64encode(combined_audio).decode('utf-8')
+            task["status"] = "completed"
+            logger.info(f"Audio export complete for story '{story['name']}': {len(combined_audio)} bytes")
+        else:
+            task["status"] = "failed"
+            task["error"] = "No audio generated - no text content found"
+            
+    except Exception as e:
+        logger.error(f"Audio export task {task_id} failed: {e}", exc_info=True)
+        task["status"] = "failed"
+        task["error"] = str(e)
+
+
+@api_router.get("/stories/audio-progress/{task_id}")
+async def get_audio_export_progress(task_id: str, user=Depends(get_current_user)):
+    """Poll audio export progress"""
+    task = audio_export_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Audio export task not found")
+    
+    # Return progress without the audio data (too large)
+    return {
+        "status": task["status"],
+        "story_name": task["story_name"],
+        "voice": task["voice"],
+        "model": task["model"],
+        "total_chapters": task["total_chapters"],
+        "current_chapter": task["current_chapter"],
+        "current_chapter_name": task["current_chapter_name"],
+        "total_characters": task["total_characters"],
+        "characters_processed": task["characters_processed"],
+        "error": task["error"],
+        "has_audio": task["audio_data"] is not None
+    }
+
+
+@api_router.get("/stories/audio-download/{task_id}")
+async def download_audio(task_id: str, token: str = None):
+    """Download the generated audio file"""
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    task = audio_export_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Audio export task not found")
+    
+    if task["status"] != "completed" or not task["audio_data"]:
+        raise HTTPException(status_code=400, detail="Audio not ready for download")
+    
+    import base64
+    audio_bytes = base64.b64decode(task["audio_data"])
+    
+    # Sanitize filename
+    story_name = task["story_name"].encode('ascii', 'ignore').decode('ascii') or "story"
+    story_name = story_name.replace(" ", "_")
+    filename = f"{story_name}_{task['voice']}.mp3"
+    
+    return Response(
+        content=audio_bytes,
+        media_type="audio/mpeg",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": "audio/mpeg"
+        }
+    )
+
+
 # Root API route for deployment startup checks
 @api_router.get("/")
 async def api_root():
