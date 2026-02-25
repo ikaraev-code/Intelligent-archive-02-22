@@ -3088,11 +3088,16 @@ async def run_audio_export_task(
             # Simple concatenation for MP3 (works for same encoding settings)
             combined_audio = b"".join(all_audio_chunks)
             
-            # Store as base64 for retrieval
-            import base64
-            task["audio_data"] = base64.b64encode(combined_audio).decode('utf-8')
+            # Save to file instead of storing in memory (prevents 502 errors with large files)
+            audio_filename = f"audio_{task_id}.mp3"
+            audio_path = UPLOAD_DIR / audio_filename
+            with open(audio_path, "wb") as f:
+                f.write(combined_audio)
+            
+            task["audio_file"] = audio_filename
+            task["audio_data"] = None  # Don't store in memory
             task["status"] = "completed"
-            logger.info(f"Audio export complete for story '{story['name']}': {len(combined_audio)} bytes")
+            logger.info(f"Audio export complete for story '{story['name']}': {len(combined_audio)} bytes saved to {audio_filename}")
         else:
             task["status"] = "failed"
             task["error"] = "No audio generated - no text content found"
@@ -3122,7 +3127,7 @@ async def get_audio_export_progress(task_id: str, user=Depends(get_current_user)
         "total_characters": task["total_characters"],
         "characters_processed": task["characters_processed"],
         "error": task["error"],
-        "has_audio": task["audio_data"] is not None
+        "has_audio": task.get("audio_file") is not None
     }
 
 
@@ -3140,24 +3145,24 @@ async def download_audio(task_id: str, token: str = None):
     if not task:
         raise HTTPException(status_code=404, detail="Audio export task not found")
     
-    if task["status"] != "completed" or not task["audio_data"]:
+    if task["status"] != "completed" or not task.get("audio_file"):
         raise HTTPException(status_code=400, detail="Audio not ready for download")
     
-    import base64
-    audio_bytes = base64.b64decode(task["audio_data"])
+    audio_path = UPLOAD_DIR / task["audio_file"]
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Audio file not found")
     
     # Sanitize filename
     story_name = task["story_name"].encode('ascii', 'ignore').decode('ascii') or "story"
     story_name = story_name.replace(" ", "_")
     filename = f"{story_name}_{task['voice']}.mp3"
     
-    return Response(
-        content=audio_bytes,
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=str(audio_path),
         media_type="audio/mpeg",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Type": "audio/mpeg"
-        }
+        filename=filename,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
 
