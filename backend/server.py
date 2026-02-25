@@ -2173,6 +2173,23 @@ async def get_chapter(story_id: str, chapter_id: str, user=Depends(get_current_u
     return chapter
 
 
+# NOTE: This route must be defined BEFORE /chapters/{chapter_id} to avoid "reorder" being captured as chapter_id
+@api_router.put("/stories/{story_id}/chapters/reorder")
+async def reorder_chapters(story_id: str, data: ChapterReorder, user=Depends(get_current_user)):
+    """Reorder chapters by providing an ordered list of chapter IDs"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    now = datetime.now(timezone.utc).isoformat()
+    for i, cid in enumerate(data.chapter_ids):
+        await db.chapters.update_one(
+            {"id": cid, "story_id": story_id},
+            {"$set": {"order": i, "updated_at": now}}
+        )
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": "Chapters reordered"}
+
+
 @api_router.put("/stories/{story_id}/chapters/{chapter_id}")
 async def update_chapter(story_id: str, chapter_id: str, data: ChapterUpdate, user=Depends(get_current_user)):
     """Update chapter name, content blocks, or order"""
