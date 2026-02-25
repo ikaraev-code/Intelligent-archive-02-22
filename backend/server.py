@@ -2055,6 +2055,410 @@ When answering questions about file content, use the FILE CONTENTS and RELEVANT 
         logger.error(f"Project chat error: {e}")
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
 
+# ==================== STORY ROUTES ====================
+
+@api_router.post("/stories")
+async def create_story(data: StoryCreate, user=Depends(get_current_user)):
+    """Create a new story"""
+    now = datetime.now(timezone.utc).isoformat()
+    story = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "name": data.name,
+        "description": data.description or "",
+        "detected_languages": [],
+        "status": "active",
+        "created_at": now,
+        "updated_at": now
+    }
+    await db.stories.insert_one(story)
+    story.pop("_id", None)
+    story["chapter_count"] = 0
+    return story
+
+
+@api_router.get("/stories")
+async def list_stories(user=Depends(get_current_user)):
+    """List all stories for the current user"""
+    stories = await db.stories.find(
+        {"user_id": user["id"]},
+        {"_id": 0}
+    ).sort("updated_at", -1).to_list(100)
+    for s in stories:
+        s["chapter_count"] = await db.chapters.count_documents({"story_id": s["id"]})
+    return stories
+
+
+@api_router.get("/stories/{story_id}")
+async def get_story(story_id: str, user=Depends(get_current_user)):
+    """Get story details with all chapters"""
+    story = await db.stories.find_one(
+        {"id": story_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapters = await db.chapters.find(
+        {"story_id": story_id},
+        {"_id": 0}
+    ).sort("order", 1).to_list(100)
+    story["chapters"] = chapters
+    story["chapter_count"] = len(chapters)
+    return story
+
+
+@api_router.put("/stories/{story_id}")
+async def update_story(story_id: str, data: StoryUpdate, user=Depends(get_current_user)):
+    """Update story name or description"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    update_fields = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if data.name is not None:
+        update_fields["name"] = data.name
+    if data.description is not None:
+        update_fields["description"] = data.description
+    await db.stories.update_one({"id": story_id}, {"$set": update_fields})
+    return {"message": "Story updated"}
+
+
+@api_router.delete("/stories/{story_id}")
+async def delete_story(story_id: str, user=Depends(get_current_user)):
+    """Delete a story and all its chapters and messages"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    await db.chapters.delete_many({"story_id": story_id})
+    await db.story_messages.delete_many({"story_id": story_id})
+    await db.stories.delete_one({"id": story_id})
+    return {"message": "Story deleted"}
+
+
+@api_router.post("/stories/{story_id}/chapters")
+async def create_chapter(story_id: str, data: ChapterCreate, user=Depends(get_current_user)):
+    """Add a new chapter to a story"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    existing_count = await db.chapters.count_documents({"story_id": story_id})
+    now = datetime.now(timezone.utc).isoformat()
+    chapter = {
+        "id": str(uuid.uuid4()),
+        "story_id": story_id,
+        "name": data.name or f"Chapter {existing_count + 1}",
+        "order": existing_count,
+        "content_blocks": [b.dict() for b in data.content_blocks] if data.content_blocks else [],
+        "detected_languages": [],
+        "created_at": now,
+        "updated_at": now
+    }
+    await db.chapters.insert_one(chapter)
+    chapter.pop("_id", None)
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return chapter
+
+
+@api_router.get("/stories/{story_id}/chapters/{chapter_id}")
+async def get_chapter(story_id: str, chapter_id: str, user=Depends(get_current_user)):
+    """Get a single chapter"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one(
+        {"id": chapter_id, "story_id": story_id},
+        {"_id": 0}
+    )
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    return chapter
+
+
+@api_router.put("/stories/{story_id}/chapters/{chapter_id}")
+async def update_chapter(story_id: str, chapter_id: str, data: ChapterUpdate, user=Depends(get_current_user)):
+    """Update chapter name, content blocks, or order"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    now = datetime.now(timezone.utc).isoformat()
+    update_fields = {"updated_at": now}
+    if data.name is not None:
+        update_fields["name"] = data.name
+    if data.content_blocks is not None:
+        update_fields["content_blocks"] = [b.dict() for b in data.content_blocks]
+    if data.order is not None:
+        update_fields["order"] = data.order
+    await db.chapters.update_one({"id": chapter_id}, {"$set": update_fields})
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": "Chapter updated"}
+
+
+@api_router.delete("/stories/{story_id}/chapters/{chapter_id}")
+async def delete_chapter(story_id: str, chapter_id: str, user=Depends(get_current_user)):
+    """Delete a chapter and its messages"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    deleted_order = chapter["order"]
+    await db.chapters.delete_one({"id": chapter_id})
+    await db.story_messages.delete_many({"chapter_id": chapter_id})
+    # Re-order remaining chapters
+    await db.chapters.update_many(
+        {"story_id": story_id, "order": {"$gt": deleted_order}},
+        {"$inc": {"order": -1}}
+    )
+    now = datetime.now(timezone.utc).isoformat()
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": "Chapter deleted"}
+
+
+@api_router.put("/stories/{story_id}/chapters/reorder")
+async def reorder_chapters(story_id: str, data: ChapterReorder, user=Depends(get_current_user)):
+    """Reorder chapters by providing an ordered list of chapter IDs"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    now = datetime.now(timezone.utc).isoformat()
+    for i, cid in enumerate(data.chapter_ids):
+        await db.chapters.update_one(
+            {"id": cid, "story_id": story_id},
+            {"$set": {"order": i, "updated_at": now}}
+        )
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": "Chapters reordered"}
+
+
+@api_router.post("/stories/{story_id}/chapters/{chapter_id}/media")
+async def add_chapter_media(
+    story_id: str, chapter_id: str,
+    file: UploadFile = File(...),
+    caption: str = "",
+    position: int = -1,
+    user=Depends(get_current_user)
+):
+    """Upload a media file and add it as a content block in a chapter"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+
+    # Upload the file using existing upload logic
+    file_id = str(uuid.uuid4())
+    ext = os.path.splitext(file.filename)[1].lower()
+    stored_filename = f"{file_id}{ext}"
+    file_path = UPLOAD_DIR / stored_filename
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # Determine media type
+    media_type = "image"
+    if ext in [".mp4", ".avi", ".mov", ".mkv", ".webm"]:
+        media_type = "video"
+    elif ext in [".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"]:
+        media_type = "audio"
+
+    # Store file record
+    now = datetime.now(timezone.utc).isoformat()
+    file_doc = {
+        "id": file_id,
+        "user_id": user["id"],
+        "original_filename": file.filename,
+        "stored_filename": stored_filename,
+        "file_type": media_type,
+        "file_size": len(content),
+        "upload_date": now,
+        "is_public": False
+    }
+    await db.files.insert_one(file_doc)
+
+    # Build download URL
+    token = None
+    auth_header = None
+    # We'll use the file_id for URL construction
+    media_block = {
+        "type": media_type,
+        "file_id": file_id,
+        "caption": caption or file.filename
+    }
+
+    # Insert into content_blocks
+    blocks = chapter.get("content_blocks", [])
+    if position < 0 or position >= len(blocks):
+        blocks.append(media_block)
+    else:
+        blocks.insert(position, media_block)
+
+    await db.chapters.update_one(
+        {"id": chapter_id},
+        {"$set": {"content_blocks": blocks, "updated_at": now}}
+    )
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+
+    media_block["id"] = file_id
+    return media_block
+
+
+@api_router.get("/stories/{story_id}/messages")
+async def get_story_messages(story_id: str, chapter_id: str = None, user=Depends(get_current_user)):
+    """Get chat messages for a story or specific chapter"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    query = {"story_id": story_id}
+    if chapter_id:
+        query["chapter_id"] = chapter_id
+    messages = await db.story_messages.find(
+        query, {"_id": 0}
+    ).sort("created_at", 1).to_list(500)
+    return {"messages": messages}
+
+
+@api_router.post("/stories/{story_id}/chat")
+async def story_chat(story_id: str, data: StoryChatRequest, user=Depends(get_current_user)):
+    """AI chat for story/chapter composition. Modes: coauthor (AI helps write) or scribe (AI organizes)"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]}, {"_id": 0})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+
+    chapter = None
+    chapter_context = ""
+    if data.chapter_id:
+        chapter = await db.chapters.find_one(
+            {"id": data.chapter_id, "story_id": story_id}, {"_id": 0}
+        )
+        if chapter:
+            # Build context from existing content blocks
+            text_blocks = [b["content"] for b in chapter.get("content_blocks", []) if b.get("type") == "text" and b.get("content")]
+            if text_blocks:
+                chapter_context = f"\n\nExisting chapter content:\n{''.join(text_blocks)}"
+
+    # Get conversation history
+    msg_query = {"story_id": story_id}
+    if data.chapter_id:
+        msg_query["chapter_id"] = data.chapter_id
+    history = await db.story_messages.find(
+        msg_query, {"_id": 0}
+    ).sort("created_at", 1).to_list(50)
+
+    # Build system prompt based on mode
+    if data.mode == "scribe":
+        system_prompt = f"""You are a professional scribe and editor for the story "{story['name']}".
+Your role is to faithfully organize, structure, and clean up what the user dictates or provides.
+- Do NOT add your own creative content
+- Fix grammar and punctuation while preserving the author's voice
+- Structure the text into clear paragraphs
+- If the user provides notes or bullet points, expand them into proper prose while staying true to their intent
+{chapter_context}"""
+    else:  # coauthor
+        system_prompt = f"""You are a creative co-author helping write the story "{story['name']}".
+Your role is to collaborate with the user to create compelling content.
+- Suggest narrative improvements, descriptions, and dialogue
+- Match the tone and style the user establishes
+- When the user gives a direction, write in that direction with rich detail
+- Offer creative alternatives when asked
+- Help with character development, plot structure, and pacing
+{chapter_context}"""
+
+    if chapter:
+        system_prompt += f"\nCurrently working on: {chapter['name']}"
+
+    # Build messages for API call
+    api_messages = [{"role": "system", "content": system_prompt}]
+    for msg in history[-20:]:  # Last 20 messages for context
+        api_messages.append({"role": msg["role"], "content": msg["content"]})
+    api_messages.append({"role": "user", "content": data.message})
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Save user message
+    user_msg = {
+        "id": str(uuid.uuid4()),
+        "story_id": story_id,
+        "chapter_id": data.chapter_id,
+        "role": "user",
+        "content": data.message,
+        "created_at": now
+    }
+    await db.story_messages.insert_one(user_msg)
+
+    try:
+        response = await emergent_chat(
+            prompt=data.message,
+            system_prompt=system_prompt,
+            chat_history=[{"role": m["role"], "content": m["content"]} for m in history[-20:]]
+        )
+
+        assistant_content = response if isinstance(response, str) else str(response)
+
+        # Save assistant message
+        assistant_msg = {
+            "id": str(uuid.uuid4()),
+            "story_id": story_id,
+            "chapter_id": data.chapter_id,
+            "role": "assistant",
+            "content": assistant_content,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.story_messages.insert_one(assistant_msg)
+
+        await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
+
+        return {
+            "message": assistant_content,
+            "mode": data.mode,
+            "chapter_id": data.chapter_id
+        }
+
+    except Exception as e:
+        logger.error(f"Story chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+
+
+@api_router.post("/stories/{story_id}/chapters/{chapter_id}/import-file")
+async def import_file_to_chapter(
+    story_id: str, chapter_id: str,
+    file_id: str = "",
+    user=Depends(get_current_user)
+):
+    """Import content from an existing library file into a chapter as a text block"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    file_doc = await db.files.find_one(
+        {"id": file_id, "$or": [{"user_id": user["id"]}, {"is_public": True}]},
+        {"_id": 0}
+    )
+    if not file_doc:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    content_text = file_doc.get("content_text", "")
+    if not content_text:
+        raise HTTPException(status_code=400, detail="File has no text content to import")
+
+    blocks = chapter.get("content_blocks", [])
+    blocks.append({"type": "text", "content": content_text})
+
+    now = datetime.now(timezone.utc).isoformat()
+    await db.chapters.update_one(
+        {"id": chapter_id},
+        {"$set": {"content_blocks": blocks, "updated_at": now}}
+    )
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+
+    return {"message": "File content imported", "filename": file_doc.get("original_filename", "")}
+
+
 # Root API route for deployment startup checks
 @api_router.get("/")
 async def api_root():
