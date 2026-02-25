@@ -469,6 +469,28 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     }
   };
 
+  const handleTranslate = async () => {
+    if (!selectedLanguage) {
+      toast.error("Please select a language");
+      return;
+    }
+    setTranslating(true);
+    try {
+      const res = await storiesAPI.translate(story.id, selectedLanguage);
+      toast.success(`Story translated to ${selectedLanguage}!`);
+      setShowTranslateDialog(false);
+      setSelectedLanguage("");
+      // Navigate to the new translated story
+      if (onTranslateSuccess) {
+        onTranslateSuccess(res.data.new_story_id);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Translation failed");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="story-detail">
       {/* Header */}
@@ -480,6 +502,15 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           <h2 className="font-semibold text-base truncate">{story.name}</h2>
           {story.description && <p className="text-xs text-muted-foreground truncate">{story.description}</p>}
         </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 text-xs gap-1.5"
+          onClick={() => setShowTranslateDialog(true)}
+          data-testid="translate-story-btn"
+        >
+          <Languages className="w-3.5 h-3.5" /> Translate
+        </Button>
         <Badge variant="outline" className="text-xs">
           {chapters.length} chapter{chapters.length !== 1 ? "s" : ""}
         </Badge>
