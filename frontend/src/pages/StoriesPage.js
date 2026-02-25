@@ -775,7 +775,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       </Dialog>
 
       {/* Translate Story Dialog */}
-      <Dialog open={showTranslateDialog} onOpenChange={(open) => !translating && setShowTranslateDialog(open)}>
+      <Dialog open={showTranslateDialog} onOpenChange={setShowTranslateDialog}>
         <DialogContent className="max-w-md" data-testid="translate-dialog">
           <DialogHeader>
             <DialogTitle>Translate Story</DialogTitle>
