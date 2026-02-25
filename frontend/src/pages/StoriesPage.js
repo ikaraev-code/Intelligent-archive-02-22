@@ -591,12 +591,19 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   };
 
   const handleAudioExport = async () => {
+    // Prevent starting a new export if one is already running
+    if (exporting) {
+      toast.info("Audio export already in progress");
+      return;
+    }
+    
     setExporting(true);
     setAudioProgress(null);
     
     try {
       const res = await storiesAPI.exportAudio(story.id, selectedVoice, selectedModel);
       const taskId = res.data.task_id;
+      setAudioTaskId(taskId);
       
       setAudioProgress({
         totalChapters: res.data.total_chapters,
