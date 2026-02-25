@@ -2750,7 +2750,7 @@ async def append_content_blocks(
 
 @api_router.get("/stories/{story_id}/preview-pdf")
 async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Optional[str] = None, credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
-    """Generate a readable PDF preview of the story or a specific chapter"""
+    """Generate a readable PDF preview of the story or a specific chapter (supports Unicode/Cyrillic)"""
     # Auth from header or query param
     auth_token = credentials.credentials if credentials else token
     if not auth_token:
@@ -2762,20 +2762,11 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
         raise HTTPException(status_code=401, detail="Invalid token")
 
     from fpdf import FPDF
-    import textwrap
+    from pathlib import Path
 
-    def sanitize(text):
-        replacements = {
-            '\u2014': '-', '\u2013': '-', '\u2018': "'", '\u2019': "'",
-            '\u201c': '"', '\u201d': '"', '\u2026': '...', '\u2022': '-',
-            '\u00b7': '-', '\u00a0': ' ', '\u200b': '',
-            '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u25cf': '-',
-            '\u2192': '->', '\u2190': '<-', '\u00d7': 'x',
-        }
-        for k, v in replacements.items():
-            text = text.replace(k, v)
-        return text.encode('latin-1', 'replace').decode('latin-1')
-
+    # Font paths for Unicode support
+    FONTS_DIR = Path(__file__).parent / "fonts"
+    
     story = await db.stories.find_one({"id": story_id, "user_id": user_id}, {"_id": 0})
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
@@ -2791,29 +2782,35 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
 
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=20)
+    
+    # Add Unicode font (DejaVu Sans supports Cyrillic, Latin, Greek, etc.)
+    if FONTS_DIR.exists() and (FONTS_DIR / "DejaVuSans.ttf").exists():
+        pdf.add_font("DejaVu", "", str(FONTS_DIR / "DejaVuSans.ttf"))
+        pdf.add_font("DejaVu", "B", str(FONTS_DIR / "DejaVuSans-Bold.ttf"))
+        pdf.add_font("DejaVu", "I", str(FONTS_DIR / "DejaVuSans-Oblique.ttf"))
+        font_family = "DejaVu"
+    else:
+        font_family = "Helvetica"
+    
     pdf.add_page()
 
-    def safe_cell(w, h, txt="", **kwargs):
-        pdf.cell(w, h, txt=sanitize(txt), **kwargs)
-
     # Title page
-    pdf.set_font("Helvetica", "B", 24)
-    safe_cell(0, 14, txt=story.get("name", "Untitled Story"), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font(font_family, "B", 24)
+    pdf.multi_cell(0, 14, txt=story.get("name", "Untitled Story"))
     pdf.ln(3)
 
     desc = story.get("description", "")
     if desc:
-        pdf.set_font("Helvetica", "I", 11)
+        pdf.set_font(font_family, "I", 11)
         pdf.set_text_color(100, 100, 100)
-        for line in textwrap.wrap(desc, width=85):
-            safe_cell(0, 5, txt=line, new_x="LMARGIN", new_y="NEXT")
+        pdf.multi_cell(0, 5, txt=desc)
         pdf.set_text_color(0, 0, 0)
     pdf.ln(3)
 
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_font(font_family, "", 9)
     pdf.set_text_color(120, 120, 120)
     meta = f"Chapters: {len(chapters)}  |  Preview generated: {datetime.now(timezone.utc).strftime('%B %d, %Y')}"
-    safe_cell(0, 5, txt=meta, new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 5, txt=meta, new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0, 0, 0)
     pdf.ln(2)
 
@@ -2827,31 +2824,29 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
             continue
 
         # Chapter title
-        pdf.set_font("Helvetica", "B", 16)
-        safe_cell(0, 10, txt=ch.get("name", "Untitled Chapter"), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font(font_family, "B", 16)
+        pdf.multi_cell(0, 10, txt=ch.get("name", "Untitled Chapter"))
         pdf.ln(4)
 
         blocks = ch.get("content_blocks", [])
         if not blocks:
-            pdf.set_font("Helvetica", "I", 10)
+            pdf.set_font(font_family, "I", 10)
             pdf.set_text_color(150, 150, 150)
-            safe_cell(0, 6, txt="(No content yet)", new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(0, 6, txt="(No content yet)", new_x="LMARGIN", new_y="NEXT")
             pdf.set_text_color(0, 0, 0)
         else:
             for block in blocks:
                 if block.get("type") == "text" and block.get("content"):
-                    pdf.set_font("Helvetica", "", 11)
+                    pdf.set_font(font_family, "", 11)
                     text = block["content"]
                     for paragraph in text.split("\n\n"):
                         paragraph = paragraph.strip()
                         if not paragraph:
                             continue
-                        for line in textwrap.wrap(paragraph, width=85):
-                            safe_cell(0, 6, txt=line, new_x="LMARGIN", new_y="NEXT")
+                        pdf.multi_cell(0, 6, txt=paragraph)
                         pdf.ln(3)
 
                 elif block.get("type") == "image":
-                    # Try to embed the image
                     caption = block.get("caption", "Image")
                     file_id = block.get("file_id")
                     embedded = False
@@ -2866,23 +2861,23 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
                                 except Exception:
                                     pass
                     if not embedded:
-                        pdf.set_font("Helvetica", "I", 10)
+                        pdf.set_font(font_family, "I", 10)
                         pdf.set_text_color(100, 100, 100)
-                        safe_cell(0, 6, txt=f"[Image: {sanitize(caption)}]", new_x="LMARGIN", new_y="NEXT")
+                        pdf.cell(0, 6, txt=f"[Image: {caption}]", new_x="LMARGIN", new_y="NEXT")
                         pdf.set_text_color(0, 0, 0)
                     if caption:
-                        pdf.set_font("Helvetica", "I", 9)
+                        pdf.set_font(font_family, "I", 9)
                         pdf.set_text_color(120, 120, 120)
-                        safe_cell(0, 5, txt=sanitize(caption), new_x="LMARGIN", new_y="NEXT")
+                        pdf.cell(0, 5, txt=caption, new_x="LMARGIN", new_y="NEXT")
                         pdf.set_text_color(0, 0, 0)
                     pdf.ln(3)
 
                 elif block.get("type") in ("video", "audio"):
                     caption = block.get("caption", block.get("type", "Media").title())
-                    pdf.set_font("Helvetica", "I", 10)
+                    pdf.set_font(font_family, "I", 10)
                     pdf.set_text_color(100, 100, 100)
                     icon = "Video" if block["type"] == "video" else "Audio"
-                    safe_cell(0, 6, txt=f"[{icon}: {sanitize(caption)}]", new_x="LMARGIN", new_y="NEXT")
+                    pdf.cell(0, 6, txt=f"[{icon}: {caption}]", new_x="LMARGIN", new_y="NEXT")
                     pdf.set_text_color(0, 0, 0)
                     pdf.ln(2)
 
@@ -2894,7 +2889,8 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
 
     # Generate PDF bytes
     pdf_bytes = pdf.output()
-    filename = sanitize(story.get("name", "story")) + "_preview.pdf"
+    story_name = story.get("name", "story").replace(" ", "_")
+    filename = f"{story_name}_preview.pdf"
 
     return Response(
         content=bytes(pdf_bytes),
