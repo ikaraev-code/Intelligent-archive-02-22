@@ -203,6 +203,18 @@ function ChapterChat({ story, chapter, onContentUpdate, importedText, onImported
       {/* Input */}
       <div className="p-3 border-t border-border">
         <div className="flex gap-2">
+          {onImportClick && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-9 w-9 flex-shrink-0" 
+              onClick={onImportClick}
+              title="Import from Library"
+              data-testid="import-file-btn"
+            >
+              <Import className="w-4 h-4" />
+            </Button>
+          )}
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
