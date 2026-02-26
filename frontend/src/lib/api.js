@@ -55,6 +55,7 @@ export const filesAPI = {
     const token = localStorage.getItem("archiva_token");
     return `${API_BASE}/files/download/${id}?token=${token}`;
   },
+  getById: (id) => api.get(`/files/${id}`),
 };
 
 // AI Archivist
