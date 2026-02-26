@@ -959,6 +959,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                   onContentUpdate={loadStory}
                   importedText={importedText}
                   onImportedTextUsed={() => setImportedText("")}
+                  onImportClick={openImportDialog}
                 />
               </div>
             </div>
