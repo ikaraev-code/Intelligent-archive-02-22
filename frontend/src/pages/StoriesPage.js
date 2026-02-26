@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 
 // ========== Chapter Composition Chat ==========
-function ChapterChat({ story, chapter, onContentUpdate }) {
+function ChapterChat({ story, chapter, onContentUpdate, importedText, onImportedTextUsed }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,6 +55,14 @@ function ChapterChat({ story, chapter, onContentUpdate }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Handle imported text - set it in the input
+  useEffect(() => {
+    if (importedText) {
+      setInput(importedText);
+      if (onImportedTextUsed) onImportedTextUsed();
+    }
+  }, [importedText]);
 
   const loadMessages = async () => {
     setLoadingHistory(true);
