@@ -82,8 +82,9 @@ function ChapterChat({ story, chapter, onContentUpdate }) {
         content: res.data.message,
         id: Date.now() + 1
       }]);
-    } catch {
-      toast.error("Chat failed");
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || "Chat failed - please try again";
+      toast.error(errorMsg, { duration: 8000 });
     } finally {
       setLoading(false);
     }
