@@ -980,7 +980,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                   <div
                     key={f.id}
                     className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
-                    onClick={() => importFromLibrary(f.id)}
+                    onClick={() => importFromLibrary(f.id, f)}
                     data-testid={`import-file-option-${f.id}`}
                   >
                     <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
