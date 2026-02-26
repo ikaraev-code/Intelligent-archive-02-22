@@ -1,15 +1,19 @@
 # Archiva - Intelligent Multimedia Archive
 
 ## Session Status (Feb 26, 2026)
-**Last Active:** Word export added, user taking a break
+**Last Active:** Import from Library fixed and improved, Exhibit # labels added
 **User Account:** ikaraev@alfangen.com
 **Preview URL:** https://chapter-craft-10.preview.emergentagent.com
 
 ### Current Stories in DB:
 - **Multex** (3 chapters) - Original English
 - **Малтекс** (3 chapters) - Russian translation
+- **Test Import Story** (1 chapter) - Test story for test@archiva.com
 
 ### Completed This Session (Feb 26):
+- ✅ **Import from Library UX Improvement** - Moved Import button from header to next to chat input
+- ✅ **Import from Library Bug Fix** - Fixed import functionality (was showing "upload failed")
+- ✅ **Exhibit # Labels** - Media uploads now automatically add "Exhibit #" labels
 - ✅ **Word Export** - Export story as .docx for editing in Microsoft Word
 - ✅ Improved translation success navigation
 - ✅ Improved error messages for chat failures
