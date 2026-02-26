@@ -1139,7 +1139,7 @@ async def download_file(file_id: str, token: Optional[str] = None, inline: bool 
     headers = {
         "Content-Disposition": disposition,
         "X-Frame-Options": "SAMEORIGIN",
-        "Content-Security-Policy": "frame-ancestors 'self' https://*.emergentagent.com https://stories-chapter-bug.preview.emergentagent.com",
+        "Content-Security-Policy": "frame-ancestors 'self' https://*.emergentagent.com https://chapter-craft-10.preview.emergentagent.com",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Expose-Headers": "Content-Disposition"
     }

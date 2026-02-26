@@ -3,7 +3,7 @@
 ## Session Status (Feb 26, 2026)
 **Last Active:** Word export added, user taking a break
 **User Account:** ikaraev@alfangen.com
-**Preview URL:** https://stories-chapter-bug.preview.emergentagent.com
+**Preview URL:** https://chapter-craft-10.preview.emergentagent.com
 
 ### Current Stories in DB:
 - **Multex** (3 chapters) - Original English
