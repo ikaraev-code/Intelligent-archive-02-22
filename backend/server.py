@@ -2996,6 +2996,139 @@ async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Option
     )
 
 
+@api_router.get("/stories/{story_id}/export-word")
+async def story_export_word(story_id: str, chapter_id: str = None, token: Optional[str] = None, credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
+    """Export story as Microsoft Word document (.docx)"""
+    # Auth from header or query param
+    auth_token = credentials.credentials if credentials else token
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        payload = jwt.decode(auth_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload["user_id"]
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    from docx import Document
+    from docx.shared import Inches, Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from io import BytesIO
+
+    story = await db.stories.find_one({"id": story_id, "user_id": user_id}, {"_id": 0})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+
+    if chapter_id:
+        chapters = [await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})]
+        if not chapters[0]:
+            raise HTTPException(status_code=404, detail="Chapter not found")
+    else:
+        chapters = await db.chapters.find(
+            {"story_id": story_id}, {"_id": 0}
+        ).sort("order", 1).to_list(100)
+
+    # Create Word document
+    doc = Document()
+    
+    # Title
+    title = doc.add_heading(story.get("name", "Untitled Story"), 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    # Description
+    desc = story.get("description", "")
+    if desc:
+        desc_para = doc.add_paragraph(desc)
+        desc_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        desc_para.runs[0].italic = True
+    
+    # Metadata
+    meta = doc.add_paragraph(f"Chapters: {len(chapters)}  |  Exported: {datetime.now(timezone.utc).strftime('%B %d, %Y')}")
+    meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    meta_run = meta.runs[0]
+    meta_run.font.size = Pt(10)
+    meta_run.font.italic = True
+    
+    doc.add_paragraph()  # Spacer
+    
+    # Chapters
+    for ch in chapters:
+        if not ch:
+            continue
+        
+        # Chapter title
+        doc.add_heading(ch.get("name", "Untitled Chapter"), 1)
+        
+        blocks = ch.get("content_blocks", [])
+        if not blocks:
+            no_content = doc.add_paragraph("(No content yet)")
+            no_content.runs[0].italic = True
+        else:
+            for block in blocks:
+                if block.get("type") == "text" and block.get("content"):
+                    # Add each paragraph
+                    text = block["content"]
+                    for paragraph in text.split("\n\n"):
+                        paragraph = paragraph.strip()
+                        if paragraph:
+                            doc.add_paragraph(paragraph)
+                
+                elif block.get("type") == "image":
+                    caption = block.get("caption", "Image")
+                    # Try to embed the image
+                    file_id = block.get("file_id")
+                    embedded = False
+                    if file_id:
+                        file_doc = await db.files.find_one({"id": file_id}, {"stored_filename": 1})
+                        if file_doc:
+                            img_path = UPLOAD_DIR / file_doc["stored_filename"]
+                            if img_path.exists():
+                                try:
+                                    doc.add_picture(str(img_path), width=Inches(5))
+                                    embedded = True
+                                except Exception:
+                                    pass
+                    if not embedded:
+                        img_para = doc.add_paragraph(f"[Image: {caption}]")
+                        img_para.runs[0].italic = True
+                    if caption:
+                        cap_para = doc.add_paragraph(caption)
+                        cap_para.runs[0].italic = True
+                        cap_para.runs[0].font.size = Pt(10)
+                
+                elif block.get("type") in ("video", "audio"):
+                    caption = block.get("caption", block.get("type", "Media").title())
+                    icon = "Video" if block["type"] == "video" else "Audio"
+                    media_para = doc.add_paragraph(f"[{icon}: {caption}]")
+                    media_para.runs[0].italic = True
+        
+        # Add page break between chapters (except last)
+        if ch != chapters[-1]:
+            doc.add_page_break()
+    
+    # Save to bytes
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    
+    # Sanitize filename
+    story_name = story.get("name", "story").replace(" ", "_")
+    try:
+        filename = story_name.encode('ascii', 'ignore').decode('ascii')
+        if not filename:
+            filename = "story"
+    except:
+        filename = "story"
+    filename = f"{filename}.docx"
+    
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        }
+    )
+
+
 # ========== Audio Export (TTS) ==========
 
 class ExportAudioRequest(BaseModel):
