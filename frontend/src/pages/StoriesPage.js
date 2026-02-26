@@ -870,6 +870,15 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
               >
                 <FileDown className="w-3 h-3" /> Full PDF
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => window.open(storiesAPI.exportWordUrl(story.id), "_blank")}
+                data-testid="export-word-btn"
+              >
+                <FileText className="w-3 h-3" /> Word
+              </Button>
             </div>
 
             {/* Split: Content Preview + Chat */}
