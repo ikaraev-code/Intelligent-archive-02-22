@@ -874,7 +874,14 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                 variant="outline"
                 size="sm"
                 className="h-7 text-xs gap-1.5"
-                onClick={() => window.open(storiesAPI.exportWordUrl(story.id), "_blank")}
+                onClick={() => {
+                  const a = document.createElement("a");
+                  a.href = storiesAPI.exportWordUrl(story.id);
+                  a.download = `${story.name}.docx`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
                 data-testid="export-word-btn"
               >
                 <FileText className="w-3 h-3" /> Word
