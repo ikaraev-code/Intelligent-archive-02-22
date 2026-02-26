@@ -2392,12 +2392,25 @@ async def add_chapter_media(
         "caption": caption or file.filename
     }
 
-    # Insert into content_blocks
+    # Insert into content_blocks with "Exhibit #" label
     blocks = chapter.get("content_blocks", [])
+    
+    # Count existing media blocks to get exhibit number
+    existing_media_count = sum(1 for b in blocks if b.get("type") in ["image", "video", "audio"])
+    exhibit_number = existing_media_count + 1
+    
+    # Create exhibit label block
+    exhibit_label_block = {
+        "type": "text",
+        "content": f"\n\nExhibit {exhibit_number}\n"
+    }
+    
     if position < 0 or position >= len(blocks):
+        blocks.append(exhibit_label_block)
         blocks.append(media_block)
     else:
-        blocks.insert(position, media_block)
+        blocks.insert(position, exhibit_label_block)
+        blocks.insert(position + 1, media_block)
 
     await db.chapters.update_one(
         {"id": chapter_id},
