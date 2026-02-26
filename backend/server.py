@@ -673,7 +673,13 @@ async def list_files(
     
     skip = (page - 1) * limit
     total = await db.files.count_documents(query)
-    files = await db.files.find(query, {"_id": 0, "content_text": 0}).sort("upload_date", -1).skip(skip).limit(limit).to_list(limit)
+    files = await db.files.find(query, {"_id": 0}).sort("upload_date", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Add has_content_text flag and remove full content_text (too large for listing)
+    for f in files:
+        f["has_content_text"] = bool(f.get("content_text"))
+        f.pop("content_text", None)
+    
     return {"files": files, "total": total, "page": page, "pages": (total + limit - 1) // limit}
 
 @api_router.get("/files/stats")
