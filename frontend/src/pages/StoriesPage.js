@@ -494,13 +494,27 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     }
   };
 
-  const importFromLibrary = async (fileId) => {
+  const importFromLibrary = async (fileId, file) => {
     if (!selectedChapter) return;
     try {
-      const res = await storiesAPI.importFile(story.id, selectedChapter.id, fileId);
-      toast.success(`Imported: ${res.data.filename}`);
+      // Get the file's text content
+      const fileDetail = await filesAPI.getById(fileId);
+      const textContent = fileDetail.data.content_text;
+      
+      if (!textContent) {
+        toast.error("No text content found in this file");
+        return;
+      }
+      
+      // Add as a user message in the chat (truncate if very long for display)
+      const displayText = textContent.length > 5000 
+        ? textContent.substring(0, 5000) + "\n\n[... content truncated for display, full text will be used ...]"
+        : textContent;
+      
+      // Store the imported text to be used in the chat
+      setImportedText(textContent);
+      toast.success(`Imported "${file.original_filename}" - text added to chat input. Use AI to process it.`);
       setShowImportDialog(false);
-      loadStory();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Import failed");
     }
