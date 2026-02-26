@@ -1,22 +1,37 @@
 # Archiva - Intelligent Multimedia Archive
 
-## Session Status (Feb 25, 2026)
-**Last Active:** Phase 3 & 4 implemented
-**User Account:** ikaraev@alfangen.com (has story "Multex" with 2 chapters)
+## Session Status (Feb 26, 2026)
+**Last Active:** Word export added, user taking a break
+**User Account:** ikaraev@alfangen.com
 **Preview URL:** https://stories-chapter-bug.preview.emergentagent.com
 
-### Completed This Session:
+### Current Stories in DB:
+- **Multex** (3 chapters) - Original English
+- **Малтекс** (3 chapters) - Russian translation
+
+### Completed This Session (Feb 26):
+- ✅ **Word Export** - Export story as .docx for editing in Microsoft Word
+- ✅ Improved translation success navigation
+- ✅ Improved error messages for chat failures
+- ✅ Fixed temporary OpenAI 502 errors (retry logic)
+
+### Previously Completed:
 - ✅ Fixed critical race condition bug (chapter content overwrite)
 - ✅ Improved edit window size (300px min-height, resizable)
 - ✅ Added delete confirmation dialog for content blocks
-- ✅ **Phase 3: Translation** - Translate entire story to new language (creates independent copy)
+- ✅ **Phase 3: Translation** - Translate entire story to new language
 - ✅ **Phase 4: Audio Export (TTS)** - Export story as MP3 using OpenAI voices
-- ✅ Fixed PDF Unicode support (Cyrillic/Russian text now renders correctly)
+- ✅ Fixed PDF Unicode support (Cyrillic/Russian text)
 - ✅ Fixed Stories nav click to return to list view
 
 ### Known Issues:
-- **Audio Export UI blocking**: 502 proxy errors during TTS polling cause dialog to stay blocked. Audio generates successfully but progress polling is unreliable. Works but UX needs improvement.
+- **Audio Export UI blocking**: 502 proxy errors during TTS polling cause dialog to stay blocked. Audio generates successfully but progress polling is unreliable.
   - **Potential fixes**: Store task status in DB, use WebSockets, or Server-Sent Events
+
+### Data Backup:
+- Backup file: `/app/backend/story_backup.json`
+- Restore script: `/app/backend/restore_stories.py`
+- If DB is empty after fork, run: `python3 /app/backend/restore_stories.py`
 
 ---
 
