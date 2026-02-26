@@ -933,7 +933,13 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
 
               {/* Chat */}
               <div className="flex-1 flex flex-col" data-testid="chapter-chat">
-                <ChapterChat story={story} chapter={selectedChapter} onContentUpdate={loadStory} />
+                <ChapterChat 
+                  story={story} 
+                  chapter={selectedChapter} 
+                  onContentUpdate={loadStory}
+                  importedText={importedText}
+                  onImportedTextUsed={() => setImportedText("")}
+                />
               </div>
             </div>
           </div>
