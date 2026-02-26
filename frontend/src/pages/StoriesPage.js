@@ -884,9 +884,6 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
               <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => mediaInputRef.current?.click()} data-testid="upload-media-btn">
                 <Paperclip className="w-3 h-3" /> Media
               </Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={openImportDialog} data-testid="import-file-btn">
-                <Import className="w-3 h-3" /> Import
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
