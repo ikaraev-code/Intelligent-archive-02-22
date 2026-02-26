@@ -486,7 +486,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     setLoadingFiles(true);
     try {
       const res = await filesAPI.list({ limit: 50 });
-      setLibraryFiles((res.data.files || []).filter(f => f.content_text));
+      setLibraryFiles((res.data.files || []).filter(f => f.has_content_text));
     } catch {
       setLibraryFiles([]);
     } finally {
