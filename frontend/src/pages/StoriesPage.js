@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 
 // ========== Chapter Composition Chat ==========
-function ChapterChat({ story, chapter, onContentUpdate, importedText, onImportedTextUsed }) {
+function ChapterChat({ story, chapter, onContentUpdate, importedText, onImportedTextUsed, onImportClick }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
