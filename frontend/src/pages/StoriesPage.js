@@ -375,6 +375,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [exporting, setExporting] = useState(false);
   const [audioProgress, setAudioProgress] = useState(null);
   const [audioTaskId, setAudioTaskId] = useState(null);
+  const [importedText, setImportedText] = useState("");
 
   useEffect(() => {
     loadStory();
