@@ -124,6 +124,12 @@ export const storiesAPI = {
     if (chapterId) url += `&chapter_id=${chapterId}`;
     return url;
   },
+  exportWordUrl: (storyId, chapterId = null) => {
+    const token = localStorage.getItem("archiva_token");
+    let url = `${BACKEND_URL}/api/stories/${storyId}/export-word?token=${token}`;
+    if (chapterId) url += `&chapter_id=${chapterId}`;
+    return url;
+  },
   getMessages: (storyId, chapterId = null) => 
     api.get(`/stories/${storyId}/messages`, { params: chapterId ? { chapter_id: chapterId } : {} }),
   chat: (storyId, message, mode = "coauthor", chapterId = null) => 
