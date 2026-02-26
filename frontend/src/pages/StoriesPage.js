@@ -235,8 +235,8 @@ function ChapterChat({ story, chapter, onContentUpdate, importedText, onImported
 // ========== Content Block Viewer/Editor ==========
 function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete, isLast }) {
   const [editing, setEditing] = useState(false);
+  const [showEditIcon, setShowEditIcon] = useState(false);
   const [editText, setEditText] = useState(block.content || "");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const saveEdit = async () => {
     if (!editText.trim()) return;
@@ -253,7 +253,6 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   const handleDelete = async () => {
     try {
       await storiesAPI.deleteBlock(storyId, chapterId, index);
-      setShowDeleteConfirm(false);
       if (onDelete) onDelete();
       toast.success("Block deleted");
     } catch {
@@ -264,12 +263,12 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   if (block.type === "text") {
     if (editing) {
       return (
-        <div className="group relative border border-primary/30 rounded-lg p-3 bg-background shadow-sm" data-testid={`content-block-${index}`}>
+        <div className="relative border border-primary/30 rounded-lg p-3 bg-background shadow-sm" data-testid={`content-block-${index}`}>
           <p className="text-xs text-muted-foreground mb-2 font-medium">Editing content block</p>
           <Textarea
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
-            className="min-h-[300px] text-sm font-normal leading-relaxed resize-y"
+            className="min-h-[300px] max-h-[500px] text-sm font-normal leading-relaxed resize-y overflow-y-auto"
             autoFocus
             data-testid={`edit-block-textarea-${index}`}
           />
@@ -281,36 +280,30 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
       );
     }
 
+    // Text block: click to show edit icon, no delete icon
     return (
-      <>
-        <div className="group relative py-1.5 px-2 -mx-2 rounded hover:bg-muted/50 transition-colors" data-testid={`content-block-${index}`}>
-          <p className="text-sm whitespace-pre-wrap leading-relaxed">{block.content}</p>
-          <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(true)} title="Edit this block" data-testid={`edit-block-${index}`}>
-              <Edit3 className="w-3 h-3" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 hover:text-destructive" onClick={() => setShowDeleteConfirm(true)} title="Delete this entire block" data-testid={`delete-block-${index}`}>
-              <Trash2 className="w-3 h-3" />
+      <div 
+        className="relative py-1.5 px-2 -mx-2 rounded hover:bg-muted/30 transition-colors cursor-pointer" 
+        data-testid={`content-block-${index}`}
+        onClick={() => setShowEditIcon(true)}
+        onMouseLeave={() => setShowEditIcon(false)}
+      >
+        <p className="text-sm whitespace-pre-wrap leading-relaxed">{block.content}</p>
+        {showEditIcon && (
+          <div className="absolute top-1 right-1">
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="h-7 w-7 shadow-sm" 
+              onClick={(e) => { e.stopPropagation(); setEditing(true); }} 
+              title="Edit this text" 
+              data-testid={`edit-block-${index}`}
+            >
+              <Edit3 className="w-3.5 h-3.5" />
             </Button>
           </div>
-        </div>
-        
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <DialogContent className="max-w-sm" data-testid={`delete-block-confirm-${index}`}>
-            <DialogHeader>
-              <DialogTitle>Delete Content Block?</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">
-              This will permanently delete this entire text block ({block.content?.length || 0} characters). This action cannot be undone.
-            </p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDelete} data-testid={`confirm-delete-block-${index}`}>Delete Block</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </>
+        )}
+      </div>
     );
   }
 
