@@ -1240,13 +1240,18 @@ export default function StoriesPage() {
 
   const handleTranslateSuccess = async (newStoryId) => {
     // Load the new translated story and navigate to it
+    setLoading(true); // Show loading state during transition
     try {
+      // First refresh the stories list
+      await loadStories();
+      // Then load and navigate to the new story
       const res = await storiesAPI.get(newStoryId);
       setSelectedStory(res.data);
-      loadStories(); // Refresh the list in background
+      toast.success("Navigated to translated story");
     } catch {
       toast.error("Failed to load translated story");
-      loadStories();
+    } finally {
+      setLoading(false);
     }
   };
 
