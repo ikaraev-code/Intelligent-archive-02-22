@@ -235,7 +235,7 @@ function ChapterChat({ story, chapter, onContentUpdate, importedText, onImported
 // ========== Content Block Viewer/Editor ==========
 function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete, isLast }) {
   const [editing, setEditing] = useState(false);
-  const [showEditIcon, setShowEditIcon] = useState(false);
+  const [showDeleteIcon, setShowDeleteIcon] = useState(false);
   const [editText, setEditText] = useState(block.content || "");
 
   const saveEdit = async () => {
@@ -263,7 +263,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   if (block.type === "text") {
     if (editing) {
       return (
-        <div className="relative border border-primary/30 rounded-lg p-3 bg-background shadow-sm" data-testid={`content-block-${index}`}>
+        <div className="relative border border-primary/30 rounded-lg p-3 bg-background shadow-sm my-2" data-testid={`content-block-${index}`}>
           <p className="text-xs text-muted-foreground mb-2 font-medium">Editing content block</p>
           <Textarea
             value={editText}
@@ -280,29 +280,15 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
       );
     }
 
-    // Text block: click to show edit icon, no delete icon
+    // Text block: click anywhere to open edit mode directly (no intermediate icon)
     return (
       <div 
         className="relative py-1.5 px-2 -mx-2 rounded hover:bg-muted/30 transition-colors cursor-pointer" 
         data-testid={`content-block-${index}`}
-        onClick={() => setShowEditIcon(true)}
-        onMouseLeave={() => setShowEditIcon(false)}
+        onClick={() => setEditing(true)}
+        title="Click to edit"
       >
         <p className="text-sm whitespace-pre-wrap leading-relaxed">{block.content}</p>
-        {showEditIcon && (
-          <div className="absolute top-1 right-1">
-            <Button 
-              variant="secondary" 
-              size="icon" 
-              className="h-7 w-7 shadow-sm" 
-              onClick={(e) => { e.stopPropagation(); setEditing(true); }} 
-              title="Edit this text" 
-              data-testid={`edit-block-${index}`}
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        )}
       </div>
     );
   }
@@ -311,47 +297,90 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   const baseUrl = process.env.REACT_APP_BACKEND_URL;
   const mediaUrl = block.file_id ? `${baseUrl}/api/files/download/${block.file_id}?token=${token}` : block.url;
 
+  // Media blocks: click to show delete icon
   if (block.type === "image") {
     return (
-      <div className="group relative my-3" data-testid={`content-block-${index}`}>
+      <div 
+        className="relative my-3 cursor-pointer" 
+        data-testid={`content-block-${index}`}
+        onClick={() => setShowDeleteIcon(!showDeleteIcon)}
+        onMouseLeave={() => setShowDeleteIcon(false)}
+      >
         <img src={mediaUrl} alt={block.caption || ""} className="max-w-full rounded-lg border" />
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="secondary" size="icon" className="h-6 w-6 shadow-sm" onClick={handleDelete} data-testid={`delete-block-${index}`}>
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
+        {showDeleteIcon && (
+          <div className="absolute top-2 right-2">
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="h-8 w-8 shadow-lg" 
+              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+              title="Delete this image"
+              data-testid={`delete-block-${index}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
 
   if (block.type === "video") {
     return (
-      <div className="group relative my-3" data-testid={`content-block-${index}`}>
+      <div 
+        className="relative my-3" 
+        data-testid={`content-block-${index}`}
+        onClick={() => setShowDeleteIcon(!showDeleteIcon)}
+        onMouseLeave={() => setShowDeleteIcon(false)}
+      >
         <video controls className="max-w-full rounded-lg border">
           <source src={mediaUrl} />
         </video>
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="secondary" size="icon" className="h-6 w-6 shadow-sm" onClick={handleDelete} data-testid={`delete-block-${index}`}>
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
+        {showDeleteIcon && (
+          <div className="absolute top-2 right-2">
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="h-8 w-8 shadow-lg" 
+              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+              title="Delete this video"
+              data-testid={`delete-block-${index}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
 
   if (block.type === "audio") {
     return (
-      <div className="group relative my-3 flex items-center gap-2" data-testid={`content-block-${index}`}>
+      <div 
+        className="relative my-3 flex items-center gap-2 p-2 rounded-lg hover:bg-muted/30" 
+        data-testid={`content-block-${index}`}
+        onClick={() => setShowDeleteIcon(!showDeleteIcon)}
+        onMouseLeave={() => setShowDeleteIcon(false)}
+      >
         <Music className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        <audio controls className="flex-1 h-8">
+        <audio controls className="flex-1 h-8" onClick={(e) => e.stopPropagation()}>
           <source src={mediaUrl} />
         </audio>
         {block.caption && <span className="text-xs text-muted-foreground">{block.caption}</span>}
-        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:text-destructive" onClick={handleDelete} data-testid={`delete-block-${index}`}>
-          <Trash2 className="w-3 h-3" />
-        </Button>
+        {showDeleteIcon && (
+          <Button 
+            variant="destructive" 
+            size="icon" 
+            className="h-7 w-7 shadow-lg flex-shrink-0" 
+            onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+            title="Delete this audio"
+            data-testid={`delete-block-${index}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        )}
       </div>
     );
   }
