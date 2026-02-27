@@ -43,7 +43,7 @@
   - **Attempted fixes**: Tried click-based and hover-based (`group-hover`) approaches - neither working as expected
   - **Next steps**: Debug CSS `group-hover` behavior, possibly use different event handling approach
 
-- **Image Extraction from Documents (P2)**: When importing DOCX/PDF files from library, automatically extract and embed images from the document into the story content, not just the text.
+- **Image Extraction from Documents (P2 - LOW)**: When importing DOCX/PDF files from library, automatically extract and embed images from the document into the story content, not just the text. *Nice-to-have, do when time permits.*
 
 ### Data Backup:
 - Backup file: `/app/backend/story_backup.json`
