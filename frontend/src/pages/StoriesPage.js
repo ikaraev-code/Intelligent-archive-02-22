@@ -936,10 +936,10 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                         onChange={(e) => setEditChapterName(e.target.value)}
                         onKeyDown={(e) => {
                           e.stopPropagation();
-                          if (e.key === "Enter") saveChapterName(ch.id);
-                          if (e.key === "Escape") setEditingChapterId(null);
+                          if (e.key === "Enter") { e.preventDefault(); saveChapterName(ch.id); }
+                          if (e.key === "Escape") { e.preventDefault(); setEditingChapterId(null); }
                         }}
-                        onBlur={() => saveChapterName(ch.id)}
+                        onBlur={() => setTimeout(() => saveChapterName(ch.id), 100)}
                         onClick={(e) => e.stopPropagation()}
                         className="h-6 text-xs flex-1"
                         autoFocus
