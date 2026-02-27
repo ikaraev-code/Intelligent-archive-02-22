@@ -370,8 +370,6 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
         </Button>
       </div>
     );
-      </div>
-    );
   }
 
   return null;
