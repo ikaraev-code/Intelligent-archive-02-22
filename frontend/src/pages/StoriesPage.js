@@ -387,6 +387,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [libraryFiles, setLibraryFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const mediaInputRef = useRef(null);
+  const chapterNameInputRef = useRef(null);
   
   // Edit title/chapter state
   const [editingStoryTitle, setEditingStoryTitle] = useState(false);
