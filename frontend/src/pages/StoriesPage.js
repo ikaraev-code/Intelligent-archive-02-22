@@ -988,10 +988,13 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                   value={editChapterName}
                   onChange={(e) => setEditChapterName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") saveChapterName(selectedChapter.id);
-                    if (e.key === "Escape") setEditingChapterId(null);
+                    if (e.key === "Enter") { e.preventDefault(); saveChapterName(selectedChapter.id); }
+                    if (e.key === "Escape") { e.preventDefault(); setEditingChapterId(null); }
                   }}
-                  onBlur={() => saveChapterName(selectedChapter.id)}
+                  onBlur={(e) => {
+                    // Small delay to allow button clicks to register
+                    setTimeout(() => saveChapterName(selectedChapter.id), 100);
+                  }}
                   className="h-7 text-sm font-semibold flex-1"
                   autoFocus
                   data-testid="edit-chapter-header-input"
