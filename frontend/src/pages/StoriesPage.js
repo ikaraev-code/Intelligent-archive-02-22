@@ -993,19 +993,17 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             <div className="flex items-center gap-2 p-3 border-b border-border bg-background">
               <BookOpen className="w-4 h-4 text-primary" />
               {editingChapterId === selectedChapter.id ? (
-                <Input
+                <input
+                  ref={chapterNameInputRef}
+                  type="text"
                   value={editChapterName}
                   onChange={(e) => setEditChapterName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") { e.preventDefault(); saveChapterName(selectedChapter.id); }
                     if (e.key === "Escape") { e.preventDefault(); setEditingChapterId(null); }
                   }}
-                  onBlur={(e) => {
-                    // Small delay to allow button clicks to register
-                    setTimeout(() => saveChapterName(selectedChapter.id), 100);
-                  }}
-                  className="h-7 text-sm font-semibold flex-1"
-                  autoFocus
+                  onBlur={() => setTimeout(() => saveChapterName(selectedChapter.id), 150)}
+                  className="h-7 text-sm font-semibold flex-1 px-2 border border-primary rounded bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   data-testid="edit-chapter-header-input"
                 />
               ) : (
