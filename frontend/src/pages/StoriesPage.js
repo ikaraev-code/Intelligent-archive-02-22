@@ -767,8 +767,8 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           }
         } catch (err) {
           // Silently retry on 502 errors (proxy timeout) - this is normal during heavy processing
-          if (err.response?.status === 502 && retryCount < 30) {
-            // Don't log every retry, just keep trying quietly
+          if (err.response?.status === 502 && retryCount < 60) {
+            // Don't log every retry, just keep trying quietly for up to ~2 minutes
             setTimeout(() => pollProgress(retryCount + 1), 2000);
             return;
           }
