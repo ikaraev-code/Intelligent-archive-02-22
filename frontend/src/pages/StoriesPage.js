@@ -926,7 +926,34 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                     data-testid={`chapter-item-${i}`}
                   >
                     <GripVertical className="w-3 h-3 opacity-30" />
-                    <span className="flex-1 truncate">{ch.name}</span>
+                    {editingChapterId === ch.id ? (
+                      <Input
+                        value={editChapterName}
+                        onChange={(e) => setEditChapterName(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") saveChapterName(ch.id);
+                          if (e.key === "Escape") setEditingChapterId(null);
+                        }}
+                        onBlur={() => saveChapterName(ch.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-6 text-xs flex-1"
+                        autoFocus
+                        data-testid={`edit-chapter-name-input-${i}`}
+                      />
+                    ) : (
+                      <span 
+                        className="flex-1 truncate" 
+                        onDoubleClick={(e) => { 
+                          e.stopPropagation(); 
+                          setEditChapterName(ch.name); 
+                          setEditingChapterId(ch.id); 
+                        }}
+                        title="Double-click to rename"
+                      >
+                        {ch.name}
+                      </span>
+                    )}
                     <span className="text-[10px] opacity-40">
                       {(ch.content_blocks || []).length}
                     </span>
