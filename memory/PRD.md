@@ -29,8 +29,10 @@
 - ✅ Fixed Stories nav click to return to list view
 
 ### Known Issues:
+- **Translation UI timeout/error (HIGH PRIORITY)**: During translation of long stories, the frontend shows an error after ~60-90 seconds due to proxy timeout on polling requests. The backend task continues and completes successfully, but the UI appears blocked/errored until completion. Same root cause as Audio Export issue.
+  
 - **Audio Export UI blocking**: 502 proxy errors during TTS polling cause dialog to stay blocked. Audio generates successfully but progress polling is unreliable.
-  - **Potential fixes**: Store task status in DB, use WebSockets, or Server-Sent Events
+  - **Potential fixes for both**: Store task status in DB, use WebSockets, Server-Sent Events, or make polling resilient to temporary 502 errors (retry silently)
 
 - **Content Block Edit/Delete UX (NEW)**: The edit/delete behavior for content blocks in Stories needs improvement:
   - **Text blocks**: Click to edit works, but edit window opens at top of text, not where user clicked
