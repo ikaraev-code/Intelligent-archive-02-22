@@ -824,7 +824,31 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           <ChevronLeft className="w-4 h-4" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-base truncate">{story.name}</h2>
+          {editingStoryTitle ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={editStoryName}
+                onChange={(e) => setEditStoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveStoryTitle();
+                  if (e.key === "Escape") setEditingStoryTitle(false);
+                }}
+                onBlur={saveStoryTitle}
+                className="h-8 text-base font-semibold"
+                autoFocus
+                data-testid="edit-story-title-input"
+              />
+            </div>
+          ) : (
+            <h2 
+              className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors" 
+              onClick={() => { setEditStoryName(story.name); setEditingStoryTitle(true); }}
+              title="Click to edit title"
+              data-testid="story-title"
+            >
+              {story.name}
+            </h2>
+          )}
           {story.description && <p className="text-xs text-muted-foreground truncate">{story.description}</p>}
         </div>
         <Button 
