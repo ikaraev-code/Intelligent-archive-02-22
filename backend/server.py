@@ -2615,7 +2615,8 @@ async def delete_content_block(
     story_id: str, chapter_id: str, block_index: int,
     user=Depends(get_current_user)
 ):
-    """Delete a content block at a specific index"""
+    """Delete a content block at a specific index. 
+    If deleting a media block (image/video/audio), also delete the preceding 'Exhibit #' label if present."""
     story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
@@ -2625,7 +2626,29 @@ async def delete_content_block(
     blocks = chapter.get("content_blocks", [])
     if block_index < 0 or block_index >= len(blocks):
         raise HTTPException(status_code=400, detail="Block index out of range")
-    blocks.pop(block_index)
+    
+    # Check if we're deleting a media block (image, video, audio)
+    block_to_delete = blocks[block_index]
+    block_type = block_to_delete.get("type", "")
+    
+    # If it's a media block, check if the previous block is an "Exhibit #" label
+    if block_type in ["image", "video", "audio"] and block_index > 0:
+        prev_block = blocks[block_index - 1]
+        if prev_block.get("type") == "text":
+            prev_content = prev_block.get("content", "").strip()
+            # Check if it's an Exhibit label (e.g., "Exhibit 1", "Exhibit 2", etc.)
+            if prev_content.startswith("Exhibit ") and prev_content.replace("Exhibit ", "").strip().isdigit():
+                # Delete the Exhibit label first (this shifts indices)
+                blocks.pop(block_index - 1)
+                # Now delete the media block (index shifted by -1)
+                blocks.pop(block_index - 1)
+            else:
+                # Just delete the media block
+                blocks.pop(block_index)
+    else:
+        # Delete just the specified block
+        blocks.pop(block_index)
+    
     now = datetime.now(timezone.utc).isoformat()
     await db.chapters.update_one({"id": chapter_id}, {"$set": {"content_blocks": blocks, "updated_at": now}})
     await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
