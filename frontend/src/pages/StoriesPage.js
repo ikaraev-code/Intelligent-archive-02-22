@@ -388,6 +388,12 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const mediaInputRef = useRef(null);
   
+  // Edit title/chapter state
+  const [editingStoryTitle, setEditingStoryTitle] = useState(false);
+  const [editStoryName, setEditStoryName] = useState("");
+  const [editingChapterId, setEditingChapterId] = useState(null);
+  const [editChapterName, setEditChapterName] = useState("");
+  
   // Translation state
   const [showTranslateDialog, setShowTranslateDialog] = useState(false);
   const [languages, setLanguages] = useState([]);
