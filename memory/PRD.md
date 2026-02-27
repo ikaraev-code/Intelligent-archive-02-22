@@ -1,23 +1,29 @@
 # Archiva - Intelligent Multimedia Archive
 
-## Session Status (Feb 26, 2026)
-**Last Active:** Import from Library fixed and improved, Exhibit # labels added
+## Session Status (Feb 27, 2026)
+**Last Active:** Fixed multiple UI/UX issues in Stories feature
 **User Account:** ikaraev@alfangen.com
 **Preview URL:** https://chapter-craft-10.preview.emergentagent.com
 
 ### Current Stories in DB:
-- **Multex** (3 chapters) - Original English
+- **Multex** (3 chapters) - Original English, has Exhibit images in "Multex I" chapter
 - **Малтекс** (3 chapters) - Russian translation
 - **Test Import Story** (1 chapter) - Test story for test@archiva.com
 
-### Completed This Session (Feb 26):
-- ✅ **Import from Library UX Improvement** - Moved Import button from header to next to chat input
-- ✅ **Import from Library Bug Fix** - Fixed import functionality (was showing "upload failed")
-- ✅ **Exhibit # Labels** - Media uploads now automatically add "Exhibit #" labels
-- ✅ **Word Export** - Export story as .docx for editing in Microsoft Word
-- ✅ Improved translation success navigation
-- ✅ Improved error messages for chat failures
-- ✅ Fixed temporary OpenAI 502 errors (retry logic)
+### Completed This Session (Feb 27):
+- ✅ **Translation UI timeout fix** - Silent retry on 502 errors (up to 60 retries)
+- ✅ **Audio Export UI fix** - Increased retry tolerance to match translation
+- ✅ **Story/Chapter title editing** - Click on title to edit inline
+- ✅ **Media delete button** - Red button visible (dim 30% opacity), brightens on hover
+- ✅ **Exhibit # auto-delete** - Deleting media also removes preceding "Exhibit #" label
+- ✅ **Text edit scroll position** - Edit window scrolls to approximate click position
+
+### Previous Session Completed (Feb 26):
+- ✅ Import from Library - moved button to chat input area
+- ✅ Exhibit # Labels - auto-added on media upload
+- ✅ Word Export (.docx)
+- ✅ Translation feature with progress tracking
+- ✅ Audio Export (TTS) with retry mechanism
 
 ### Previously Completed:
 - ✅ Fixed critical race condition bug (chapter content overwrite)
