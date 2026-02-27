@@ -572,8 +572,8 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
         currentChapterName: "Starting..."
       });
       
-      // Poll for progress
-      const pollProgress = async () => {
+      // Poll for progress with retry on 502 errors
+      const pollProgress = async (retryCount = 0) => {
         try {
           const progressRes = await storiesAPI.getTranslationProgress(taskId);
           const progress = progressRes.data;
@@ -609,10 +609,17 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             setTranslationProgress(null);
             setTranslating(false);
           } else {
-            // Still running, poll again
-            setTimeout(pollProgress, 2000);
+            // Still running, poll again (reset retry count on success)
+            setTimeout(() => pollProgress(0), 2000);
           }
         } catch (err) {
+          // Silently retry on 502 errors (proxy timeout) - this is normal during heavy processing
+          if (err.response?.status === 502 && retryCount < 60) {
+            // Keep retrying silently for up to ~2 minutes of 502 errors
+            setTimeout(() => pollProgress(retryCount + 1), 2000);
+            return;
+          }
+          // Only show error after many consecutive failures or for non-502 errors
           console.error("Progress poll error:", err);
           const errorDetail = err.response?.data?.detail || err.message || "Translation failed";
           toast.error(errorDetail);
