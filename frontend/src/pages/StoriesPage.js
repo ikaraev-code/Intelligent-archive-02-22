@@ -418,6 +418,14 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     loadLanguages();
     loadTtsOptions();
   }, []);
+
+  // Focus chapter name input when editing starts
+  useEffect(() => {
+    if (editingChapterId && chapterNameInputRef.current) {
+      chapterNameInputRef.current.focus();
+      chapterNameInputRef.current.select();
+    }
+  }, [editingChapterId]);
   
   const loadLanguages = async () => {
     try {
