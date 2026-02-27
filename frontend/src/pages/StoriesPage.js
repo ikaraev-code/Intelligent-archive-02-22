@@ -235,7 +235,6 @@ function ChapterChat({ story, chapter, onContentUpdate, importedText, onImported
 // ========== Content Block Viewer/Editor ==========
 function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete, isLast }) {
   const [editing, setEditing] = useState(false);
-  const [showDeleteIcon, setShowDeleteIcon] = useState(false);
   const [editText, setEditText] = useState(block.content || "");
 
   const saveEdit = async () => {
