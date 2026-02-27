@@ -979,7 +979,29 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
             {/* Chapter Header with Actions */}
             <div className="flex items-center gap-2 p-3 border-b border-border bg-background">
               <BookOpen className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold flex-1">{selectedChapter.name}</h3>
+              {editingChapterId === selectedChapter.id ? (
+                <Input
+                  value={editChapterName}
+                  onChange={(e) => setEditChapterName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveChapterName(selectedChapter.id);
+                    if (e.key === "Escape") setEditingChapterId(null);
+                  }}
+                  onBlur={() => saveChapterName(selectedChapter.id)}
+                  className="h-7 text-sm font-semibold flex-1"
+                  autoFocus
+                  data-testid="edit-chapter-header-input"
+                />
+              ) : (
+                <h3 
+                  className="text-sm font-semibold flex-1 cursor-pointer hover:text-primary transition-colors" 
+                  onClick={() => { setEditChapterName(selectedChapter.name); setEditingChapterId(selectedChapter.id); }}
+                  title="Click to rename chapter"
+                  data-testid="chapter-header-title"
+                >
+                  {selectedChapter.name}
+                </h3>
+              )}
               <input
                 ref={mediaInputRef}
                 type="file"
