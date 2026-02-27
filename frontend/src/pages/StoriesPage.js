@@ -236,6 +236,23 @@ function ChapterChat({ story, chapter, onContentUpdate, importedText, onImported
 function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete, isLast }) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(block.content || "");
+  const [clickRatio, setClickRatio] = useState(0); // Ratio of where user clicked (0-1)
+  const textareaRef = useRef(null);
+
+  // Scroll textarea to approximate click position when editing starts
+  useEffect(() => {
+    if (editing && textareaRef.current && clickRatio > 0) {
+      const textarea = textareaRef.current;
+      // Calculate scroll position based on click ratio
+      const scrollTarget = (textarea.scrollHeight - textarea.clientHeight) * clickRatio;
+      textarea.scrollTop = Math.max(0, scrollTarget);
+      
+      // Also try to position cursor near the clicked area
+      const totalLength = editText.length;
+      const cursorPos = Math.floor(totalLength * clickRatio);
+      textarea.setSelectionRange(cursorPos, cursorPos);
+    }
+  }, [editing, clickRatio, editText.length]);
 
   const saveEdit = async () => {
     if (!editText.trim()) return;
@@ -259,21 +276,30 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
     }
   };
 
+  const handleTextClick = (e) => {
+    // Calculate where in the text block the user clicked (as a ratio 0-1)
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const ratio = Math.max(0, Math.min(1, clickY / rect.height));
+    setClickRatio(ratio);
+    setEditing(true);
+  };
+
   if (block.type === "text") {
     if (editing) {
       return (
         <div className="relative border border-primary/30 rounded-lg p-3 bg-background shadow-sm my-2" data-testid={`content-block-${index}`}>
           <p className="text-xs text-muted-foreground mb-2 font-medium">Editing content block</p>
           <Textarea
+            ref={textareaRef}
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             className="min-h-[300px] max-h-[500px] text-sm font-normal leading-relaxed resize-y overflow-y-auto"
-            autoFocus
             data-testid={`edit-block-textarea-${index}`}
           />
           <div className="flex gap-2 mt-3">
             <Button size="sm" className="h-8 px-4" onClick={saveEdit} data-testid={`save-block-${index}`}>Save Changes</Button>
-            <Button size="sm" variant="outline" className="h-8 px-4" onClick={() => { setEditing(false); setEditText(block.content || ""); }}>Cancel</Button>
+            <Button size="sm" variant="outline" className="h-8 px-4" onClick={() => { setEditing(false); setEditText(block.content || ""); setClickRatio(0); }}>Cancel</Button>
           </div>
         </div>
       );
@@ -284,7 +310,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
       <div 
         className="relative py-1.5 px-2 -mx-2 rounded hover:bg-muted/30 transition-colors cursor-pointer" 
         data-testid={`content-block-${index}`}
-        onClick={() => setEditing(true)}
+        onClick={handleTextClick}
         title="Click to edit"
       >
         <p className="text-sm whitespace-pre-wrap leading-relaxed">{block.content}</p>
