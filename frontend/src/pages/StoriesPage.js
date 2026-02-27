@@ -497,6 +497,41 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     }
   };
 
+  const saveStoryTitle = async () => {
+    if (!editStoryName.trim()) {
+      setEditingStoryTitle(false);
+      return;
+    }
+    try {
+      await storiesAPI.update(story.id, { name: editStoryName.trim() });
+      setStory(prev => ({ ...prev, name: editStoryName.trim() }));
+      setEditingStoryTitle(false);
+      toast.success("Title updated");
+    } catch {
+      toast.error("Failed to update title");
+    }
+  };
+
+  const saveChapterName = async (chapterId) => {
+    if (!editChapterName.trim()) {
+      setEditingChapterId(null);
+      return;
+    }
+    try {
+      await storiesAPI.updateChapter(story.id, chapterId, { name: editChapterName.trim() });
+      setChapters(prev => prev.map(ch => 
+        ch.id === chapterId ? { ...ch, name: editChapterName.trim() } : ch
+      ));
+      if (selectedChapter?.id === chapterId) {
+        setSelectedChapter(prev => ({ ...prev, name: editChapterName.trim() }));
+      }
+      setEditingChapterId(null);
+      toast.success("Chapter name updated");
+    } catch {
+      toast.error("Failed to update chapter name");
+    }
+  };
+
   const handleMediaUpload = async (e) => {
     if (!selectedChapter) return;
     const files = Array.from(e.target.files);
