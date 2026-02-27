@@ -32,6 +32,15 @@
 - **Audio Export UI blocking**: 502 proxy errors during TTS polling cause dialog to stay blocked. Audio generates successfully but progress polling is unreliable.
   - **Potential fixes**: Store task status in DB, use WebSockets, or Server-Sent Events
 
+- **Content Block Edit/Delete UX (NEW)**: The edit/delete behavior for content blocks in Stories needs improvement:
+  - **Text blocks**: Click to edit works, but edit window opens at top of text, not where user clicked
+  - **Media blocks (image/video/audio)**: Hover-to-show-delete button is not working reliably - delete icon doesn't appear on hover
+  - **User's desired behavior**: 
+    - Text: Click anywhere → show edit icon near click location → click icon → open scrollable edit window
+    - Media: Hover over media → show delete button → click to delete
+  - **Attempted fixes**: Tried click-based and hover-based (`group-hover`) approaches - neither working as expected
+  - **Next steps**: Debug CSS `group-hover` behavior, possibly use different event handling approach
+
 ### Data Backup:
 - Backup file: `/app/backend/story_backup.json`
 - Restore script: `/app/backend/restore_stories.py`
