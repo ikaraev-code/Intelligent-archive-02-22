@@ -296,27 +296,24 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   const baseUrl = process.env.REACT_APP_BACKEND_URL;
   const mediaUrl = block.file_id ? `${baseUrl}/api/files/download/${block.file_id}?token=${token}` : block.url;
 
-  // Media blocks: always show delete button in corner, click to delete
+  // Media blocks: show delete button on hover
   if (block.type === "image") {
     return (
       <div 
-        className="relative my-3 group" 
+        className="relative my-3" 
         data-testid={`content-block-${index}`}
+        style={{ position: 'relative' }}
       >
         <img src={mediaUrl} alt={block.caption || ""} className="max-w-full rounded-lg border" />
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            className="h-8 w-8 shadow-lg" 
-            onClick={handleDelete}
-            title="Delete this image"
-            data-testid={`delete-block-${index}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+        <button 
+          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg opacity-40 hover:opacity-100 transition-opacity"
+          onClick={handleDelete}
+          title="Delete this image"
+          data-testid={`delete-block-${index}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     );
   }
@@ -324,25 +321,21 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   if (block.type === "video") {
     return (
       <div 
-        className="relative my-3 group" 
+        className="relative my-3" 
         data-testid={`content-block-${index}`}
       >
         <video controls className="max-w-full rounded-lg border">
           <source src={mediaUrl} />
         </video>
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            className="h-8 w-8 shadow-lg" 
-            onClick={handleDelete}
-            title="Delete this video"
-            data-testid={`delete-block-${index}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+        <button 
+          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg opacity-40 hover:opacity-100 transition-opacity z-10"
+          onClick={handleDelete}
+          title="Delete this video"
+          data-testid={`delete-block-${index}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     );
   }
@@ -350,7 +343,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   if (block.type === "audio") {
     return (
       <div 
-        className="relative my-3 flex items-center gap-2 p-2 rounded-lg group hover:bg-muted/30" 
+        className="relative my-3 flex items-center gap-2 p-2 rounded-lg hover:bg-muted/30" 
         data-testid={`content-block-${index}`}
       >
         <Music className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -358,16 +351,14 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
           <source src={mediaUrl} />
         </audio>
         {block.caption && <span className="text-xs text-muted-foreground">{block.caption}</span>}
-        <Button 
-          variant="destructive" 
-          size="icon" 
-          className="h-7 w-7 shadow-lg flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" 
+        <button 
+          className="h-7 w-7 rounded-md bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity"
           onClick={handleDelete}
           title="Delete this audio"
           data-testid={`delete-block-${index}`}
         >
           <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        </button>
       </div>
     );
   }
