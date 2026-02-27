@@ -31,10 +31,10 @@
 ### Known Issues:
 - **Translation UI timeout/error (HIGH PRIORITY)**: During translation of long stories, the frontend shows an error after ~60-90 seconds due to proxy timeout on polling requests. The backend task continues and completes successfully, but the UI appears blocked/errored until completion. Same root cause as Audio Export issue.
   
-- **Audio Export UI blocking**: 502 proxy errors during TTS polling cause dialog to stay blocked. Audio generates successfully but progress polling is unreliable.
+- **Audio Export UI blocking (P1)**: 502 proxy errors during TTS polling cause dialog to stay blocked. Audio generates successfully but progress polling is unreliable.
   - **Potential fixes for both**: Store task status in DB, use WebSockets, Server-Sent Events, or make polling resilient to temporary 502 errors (retry silently)
 
-- **Content Block Edit/Delete UX (NEW)**: The edit/delete behavior for content blocks in Stories needs improvement:
+- **Content Block Edit/Delete UX**: The edit/delete behavior for content blocks in Stories needs improvement:
   - **Text blocks**: Click to edit works, but edit window opens at top of text, not where user clicked
   - **Media blocks (image/video/audio)**: Hover-to-show-delete button is not working reliably - delete icon doesn't appear on hover
   - **User's desired behavior**: 
@@ -42,6 +42,8 @@
     - Media: Hover over media → show delete button → click to delete
   - **Attempted fixes**: Tried click-based and hover-based (`group-hover`) approaches - neither working as expected
   - **Next steps**: Debug CSS `group-hover` behavior, possibly use different event handling approach
+
+- **Image Extraction from Documents (P2)**: When importing DOCX/PDF files from library, automatically extract and embed images from the document into the story content, not just the text.
 
 ### Data Backup:
 - Backup file: `/app/backend/story_backup.json`
