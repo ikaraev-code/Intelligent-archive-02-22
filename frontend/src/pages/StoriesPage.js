@@ -513,17 +513,21 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   };
 
   const saveChapterName = async (chapterId) => {
-    if (!editChapterName.trim()) {
+    const trimmedName = editChapterName.trim();
+    const originalChapter = chapters.find(ch => ch.id === chapterId);
+    
+    // Don't save if empty or unchanged
+    if (!trimmedName || trimmedName === originalChapter?.name) {
       setEditingChapterId(null);
       return;
     }
     try {
-      await storiesAPI.updateChapter(story.id, chapterId, { name: editChapterName.trim() });
+      await storiesAPI.updateChapter(story.id, chapterId, { name: trimmedName });
       setChapters(prev => prev.map(ch => 
-        ch.id === chapterId ? { ...ch, name: editChapterName.trim() } : ch
+        ch.id === chapterId ? { ...ch, name: trimmedName } : ch
       ));
       if (selectedChapter?.id === chapterId) {
-        setSelectedChapter(prev => ({ ...prev, name: editChapterName.trim() }));
+        setSelectedChapter(prev => ({ ...prev, name: trimmedName }));
       }
       setEditingChapterId(null);
       toast.success("Chapter name updated");
