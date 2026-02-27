@@ -302,15 +302,15 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
       <div 
         className="relative my-3" 
         data-testid={`content-block-${index}`}
-        style={{ position: 'relative' }}
       >
         <img src={mediaUrl} alt={block.caption || ""} className="max-w-full rounded-lg border" />
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
         <button 
-          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg opacity-40 hover:opacity-100 transition-opacity"
+          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors cursor-pointer"
           onClick={handleDelete}
           title="Delete this image"
           data-testid={`delete-block-${index}`}
+          style={{ zIndex: 50 }}
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -329,10 +329,11 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
         </video>
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
         <button 
-          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg opacity-40 hover:opacity-100 transition-opacity z-10"
+          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors cursor-pointer"
           onClick={handleDelete}
           title="Delete this video"
           data-testid={`delete-block-${index}`}
+          style={{ zIndex: 50 }}
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -352,7 +353,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
         </audio>
         {block.caption && <span className="text-xs text-muted-foreground">{block.caption}</span>}
         <button 
-          className="h-7 w-7 rounded-md bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity"
+          className="h-7 w-7 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors cursor-pointer flex-shrink-0"
           onClick={handleDelete}
           title="Delete this audio"
           data-testid={`delete-block-${index}`}
