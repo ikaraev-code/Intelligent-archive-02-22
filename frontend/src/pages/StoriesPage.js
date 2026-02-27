@@ -296,7 +296,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
   const baseUrl = process.env.REACT_APP_BACKEND_URL;
   const mediaUrl = block.file_id ? `${baseUrl}/api/files/download/${block.file_id}?token=${token}` : block.url;
 
-  // Media blocks: show delete button on hover
+  // Media blocks: show delete button (dim, brightens on hover)
   if (block.type === "image") {
     return (
       <div 
@@ -306,7 +306,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
         <img src={mediaUrl} alt={block.caption || ""} className="max-w-full rounded-lg border" />
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
         <button 
-          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors cursor-pointer"
+          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg opacity-30 hover:opacity-100 transition-opacity cursor-pointer"
           onClick={handleDelete}
           title="Delete this image"
           data-testid={`delete-block-${index}`}
@@ -329,7 +329,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
         </video>
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
         <button 
-          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors cursor-pointer"
+          className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg opacity-30 hover:opacity-100 transition-opacity cursor-pointer"
           onClick={handleDelete}
           title="Delete this video"
           data-testid={`delete-block-${index}`}
@@ -353,7 +353,7 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
         </audio>
         {block.caption && <span className="text-xs text-muted-foreground">{block.caption}</span>}
         <button 
-          className="h-7 w-7 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors cursor-pointer flex-shrink-0"
+          className="h-7 w-7 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg opacity-30 hover:opacity-100 transition-opacity cursor-pointer flex-shrink-0"
           onClick={handleDelete}
           title="Delete this audio"
           data-testid={`delete-block-${index}`}
