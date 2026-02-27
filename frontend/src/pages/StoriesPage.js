@@ -940,7 +940,9 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                   >
                     <GripVertical className="w-3 h-3 opacity-30" />
                     {editingChapterId === ch.id ? (
-                      <Input
+                      <input
+                        ref={chapterNameInputRef}
+                        type="text"
                         value={editChapterName}
                         onChange={(e) => setEditChapterName(e.target.value)}
                         onKeyDown={(e) => {
@@ -948,10 +950,9 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                           if (e.key === "Enter") { e.preventDefault(); saveChapterName(ch.id); }
                           if (e.key === "Escape") { e.preventDefault(); setEditingChapterId(null); }
                         }}
-                        onBlur={() => setTimeout(() => saveChapterName(ch.id), 100)}
+                        onBlur={() => setTimeout(() => saveChapterName(ch.id), 150)}
                         onClick={(e) => e.stopPropagation()}
-                        className="h-6 text-xs flex-1"
-                        autoFocus
+                        className="h-6 text-xs flex-1 px-1 border border-primary rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                         data-testid={`edit-chapter-name-input-${i}`}
                       />
                     ) : (
