@@ -645,7 +645,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
         };
         
         // Use append-blocks endpoint to add the media
-        await storiesAPI.appendBlocks(story.id, selectedChapter.id, [mediaBlock]);
+        await storiesAPI.appendContentBlock(story.id, selectedChapter.id, mediaBlock);
         toast.success(`Added "${file.original_filename}" to chapter`);
         setShowImportDialog(false);
         loadStory(); // Refresh to show new media
