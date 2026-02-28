@@ -324,12 +324,39 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
 
   // Media blocks: show delete button (dim, brightens on hover)
   if (block.type === "image") {
+    // If no valid URL, show placeholder with delete option
+    if (!mediaUrl) {
+      return (
+        <div className="relative my-3 p-4 border border-dashed border-muted-foreground/30 rounded-lg bg-muted/20" data-testid={`content-block-${index}`}>
+          <p className="text-sm text-muted-foreground">Image unavailable: {block.caption || "No caption"}</p>
+          <button 
+            className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg opacity-30 hover:opacity-100 transition-opacity cursor-pointer"
+            onClick={handleDelete}
+            title="Delete this image"
+            data-testid={`delete-block-${index}`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      );
+    }
     return (
       <div 
         className="relative my-3" 
         data-testid={`content-block-${index}`}
       >
-        <img src={mediaUrl} alt={block.caption || ""} className="max-w-full rounded-lg border" />
+        <img 
+          src={mediaUrl} 
+          alt={block.caption || ""} 
+          className="max-w-full rounded-lg border"
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling?.classList?.remove('hidden');
+          }}
+        />
+        <div className="hidden p-4 border border-dashed border-muted-foreground/30 rounded-lg bg-muted/20">
+          <p className="text-sm text-muted-foreground">Failed to load image: {block.caption || block.file_id}</p>
+        </div>
         {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
         <button 
           className="absolute top-2 right-2 h-8 w-8 rounded-md bg-red-600 text-white flex items-center justify-center shadow-lg opacity-30 hover:opacity-100 transition-opacity cursor-pointer"
