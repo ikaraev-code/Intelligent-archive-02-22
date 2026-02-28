@@ -2800,38 +2800,60 @@ Rules:
             task["current_chapter_name"] = chapter.get("name", f"Chapter {i+1}")
             logger.info(f"Translating chapter {i+1}/{len(original_chapters)}: {chapter.get('name', 'Untitled')}")
             
-            # Translate chapter name
-            translated_chapter_name = await translate_text(chapter.get("name", f"Chapter {i+1}"), "This is a chapter title")
-            
-            # Translate content blocks
-            translated_blocks = []
-            for block in chapter.get("content_blocks", []):
-                if block.get("type") == "text" and block.get("content"):
-                    translated_content = await translate_text(
-                        block["content"], 
-                        f"From story '{original_story['name']}', chapter '{chapter.get('name', '')}'"
-                    )
-                    translated_blocks.append({
-                        "type": "text",
-                        "content": translated_content
-                    })
-                    task["blocks_translated"] += 1
-                else:
-                    # Keep non-text blocks (images, videos, audio) as-is
-                    translated_blocks.append(block)
-            
-            new_chapter_id = str(uuid.uuid4())
-            new_chapter = {
-                "id": new_chapter_id,
-                "story_id": new_story_id,
-                "name": translated_chapter_name,
-                "order": chapter.get("order", i),
-                "content_blocks": translated_blocks,
-                "created_at": now,
-                "updated_at": now,
-                "source_chapter_id": chapter["id"]
-            }
-            await db.chapters.insert_one(new_chapter)
+            try:
+                # Translate chapter name
+                translated_chapter_name = await translate_text(chapter.get("name", f"Chapter {i+1}"), "This is a chapter title")
+                
+                # Translate content blocks
+                translated_blocks = []
+                for block in chapter.get("content_blocks", []):
+                    try:
+                        if block.get("type") == "text" and block.get("content"):
+                            translated_content = await translate_text(
+                                block["content"], 
+                                f"From story '{original_story['name']}', chapter '{chapter.get('name', '')}'"
+                            )
+                            translated_blocks.append({
+                                "type": "text",
+                                "content": translated_content
+                            })
+                            task["blocks_translated"] += 1
+                        else:
+                            # Keep non-text blocks (images, videos, audio) as-is
+                            translated_blocks.append(block)
+                    except Exception as block_err:
+                        logger.error(f"Error translating block in chapter {i+1}: {block_err}")
+                        # Keep original block if translation fails
+                        translated_blocks.append(block)
+                
+                new_chapter_id = str(uuid.uuid4())
+                new_chapter = {
+                    "id": new_chapter_id,
+                    "story_id": new_story_id,
+                    "name": translated_chapter_name,
+                    "order": chapter.get("order", i),
+                    "content_blocks": translated_blocks,
+                    "created_at": now,
+                    "updated_at": now,
+                    "source_chapter_id": chapter["id"]
+                }
+                await db.chapters.insert_one(new_chapter)
+                
+            except Exception as chapter_err:
+                logger.error(f"Error translating chapter {i+1} '{chapter.get('name', '')}': {chapter_err}")
+                # Create chapter with original content if translation fails
+                new_chapter_id = str(uuid.uuid4())
+                new_chapter = {
+                    "id": new_chapter_id,
+                    "story_id": new_story_id,
+                    "name": f"[Translation Error] {chapter.get('name', f'Chapter {i+1}')}",
+                    "order": chapter.get("order", i),
+                    "content_blocks": chapter.get("content_blocks", []),
+                    "created_at": now,
+                    "updated_at": now,
+                    "source_chapter_id": chapter["id"]
+                }
+                await db.chapters.insert_one(new_chapter)
         
         task["status"] = "completed"
         task["current_chapter_name"] = ""
