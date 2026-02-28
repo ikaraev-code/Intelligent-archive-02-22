@@ -690,18 +690,15 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           }
         } catch (err) {
           // Silently retry on 502 errors (proxy timeout) - this is normal during heavy processing
-          if (err.response?.status === 502 && retryCount < 60) {
-            // Keep retrying silently for up to ~2 minutes of 502 errors
+          if (err.response?.status === 502 && retryCount < 180) {
+            // Keep retrying silently for up to ~6 minutes of 502 errors
             setTimeout(() => pollProgress(retryCount + 1), 2000);
             return;
           }
           // Only show error after many consecutive failures or for non-502 errors
           console.error("Progress poll error:", err);
-          const errorDetail = err.response?.data?.detail || err.message || "Translation failed";
-          toast.error(errorDetail);
-          setTranslationStatus("");
-          setTranslationProgress(null);
-          setTranslating(false);
+          // Don't show error toast - just keep the dialog open for user to retry or close
+          // The translation might still complete in the background
         }
       };
       
