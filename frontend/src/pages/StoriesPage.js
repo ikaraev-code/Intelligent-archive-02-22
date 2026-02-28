@@ -1193,30 +1193,51 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
         <DialogContent className="max-w-md" data-testid="import-dialog">
           <DialogHeader>
             <DialogTitle>Import from Library</DialogTitle>
+            <DialogDescription>
+              Select a file to import. Text files will be added to chat, media files will be inserted directly.
+            </DialogDescription>
           </DialogHeader>
           {loadingFiles ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           ) : libraryFiles.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No files with text content found in your library.</p>
+            <p className="text-sm text-muted-foreground text-center py-6">No files found in your library.</p>
           ) : (
             <ScrollArea className="max-h-72">
               <div className="space-y-1">
-                {libraryFiles.map((f) => (
-                  <div
-                    key={f.id}
-                    className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
-                    onClick={() => importFromLibrary(f.id, f)}
-                    data-testid={`import-file-option-${f.id}`}
-                  >
-                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{f.original_filename}</p>
-                      <p className="text-[10px] text-muted-foreground">{f.file_type} · {(f.tags || []).join(", ") || "no tags"}</p>
+                {libraryFiles.map((f) => {
+                  const mimeType = f.mime_type || "";
+                  const isImage = mimeType.startsWith("image/");
+                  const isVideo = mimeType.startsWith("video/");
+                  const isAudio = mimeType.startsWith("audio/");
+                  const isMedia = isImage || isVideo || isAudio;
+                  
+                  return (
+                    <div
+                      key={f.id}
+                      className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
+                      onClick={() => importFromLibrary(f.id, f)}
+                      data-testid={`import-file-option-${f.id}`}
+                    >
+                      {isImage ? (
+                        <ImageIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      ) : isVideo ? (
+                        <Film className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                      ) : isAudio ? (
+                        <Music className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{f.original_filename}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {isMedia ? (isImage ? "Image" : isVideo ? "Video" : "Audio") : f.file_type} · {(f.tags || []).join(", ") || "no tags"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           )}
