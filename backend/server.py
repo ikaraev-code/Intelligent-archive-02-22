@@ -2820,7 +2820,18 @@ Rules:
                             task["blocks_translated"] += 1
                         else:
                             # Keep non-text blocks (images, videos, audio) as-is
-                            translated_blocks.append(block)
+                            # Make a proper copy of the block with all fields
+                            copied_block = {
+                                "type": block.get("type"),
+                                "file_id": block.get("file_id"),
+                                "caption": block.get("caption", ""),
+                            }
+                            # Include any other fields that might exist
+                            if block.get("url"):
+                                copied_block["url"] = block.get("url")
+                            if block.get("block_id"):
+                                copied_block["block_id"] = block.get("block_id")
+                            translated_blocks.append(copied_block)
                     except Exception as block_err:
                         logger.error(f"Error translating block in chapter {i+1}: {block_err}")
                         # Keep original block if translation fails
