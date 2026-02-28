@@ -614,8 +614,10 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     setShowImportDialog(true);
     setLoadingFiles(true);
     try {
-      const res = await filesAPI.list({ limit: 50 });
-      setLibraryFiles((res.data.files || []).filter(f => f.has_content_text));
+      const res = await filesAPI.list({ limit: 100 });
+      // Show all files - text files and media files (images, video, audio)
+      const allFiles = res.data.files || [];
+      setLibraryFiles(allFiles);
     } catch {
       setLibraryFiles([]);
     } finally {
@@ -625,6 +627,35 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
 
   const importFromLibrary = async (fileId, file) => {
     if (!selectedChapter) return;
+    
+    // Check if it's a media file (image, video, audio)
+    const mimeType = file.mime_type || "";
+    const isImage = mimeType.startsWith("image/");
+    const isVideo = mimeType.startsWith("video/");
+    const isAudio = mimeType.startsWith("audio/");
+    
+    if (isImage || isVideo || isAudio) {
+      // Insert as media block
+      try {
+        const mediaType = isImage ? "image" : isVideo ? "video" : "audio";
+        const mediaBlock = {
+          type: mediaType,
+          file_id: fileId,
+          caption: file.original_filename
+        };
+        
+        // Use append-blocks endpoint to add the media
+        await storiesAPI.appendBlocks(story.id, selectedChapter.id, [mediaBlock]);
+        toast.success(`Added "${file.original_filename}" to chapter`);
+        setShowImportDialog(false);
+        loadStory(); // Refresh to show new media
+      } catch (err) {
+        toast.error(err.response?.data?.detail || "Failed to add media");
+      }
+      return;
+    }
+    
+    // For text files, import text content
     try {
       // Get the file's text content
       const fileDetail = await filesAPI.getById(fileId);
@@ -634,11 +665,6 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
         toast.error("No text content found in this file");
         return;
       }
-      
-      // Add as a user message in the chat (truncate if very long for display)
-      const displayText = textContent.length > 5000 
-        ? textContent.substring(0, 5000) + "\n\n[... content truncated for display, full text will be used ...]"
-        : textContent;
       
       // Store the imported text to be used in the chat
       setImportedText(textContent);
