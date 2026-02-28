@@ -1221,9 +1221,9 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                       data-testid={`import-file-option-${f.id}`}
                     >
                       {isImage ? (
-                        <ImageIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <Image className="w-4 h-4 text-blue-500 flex-shrink-0" />
                       ) : isVideo ? (
-                        <Film className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                        <Video className="w-4 h-4 text-purple-500 flex-shrink-0" />
                       ) : isAudio ? (
                         <Music className="w-4 h-4 text-green-500 flex-shrink-0" />
                       ) : (
