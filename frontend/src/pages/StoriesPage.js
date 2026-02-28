@@ -661,15 +661,19 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           if (progress.status === "completed") {
             setTranslationStatus("Translation complete!");
             toast.success(`Story translated to ${selectedLanguage}!`);
-            setShowTranslateDialog(false);
+            // Reset all state
             setSelectedLanguage("");
             setTranslationStatus("");
             setTranslationProgress(null);
             setTranslating(false);
-            // Navigate to the new translated story
-            if (onTranslateSuccess && progress.new_story_id) {
-              onTranslateSuccess(progress.new_story_id);
-            }
+            // Close dialog after a brief delay to ensure state is updated
+            setTimeout(() => {
+              setShowTranslateDialog(false);
+              // Navigate to the new translated story
+              if (onTranslateSuccess && progress.new_story_id) {
+                onTranslateSuccess(progress.new_story_id);
+              }
+            }, 500);
           } else if (progress.status === "failed") {
             // Make error message more user-friendly
             let errorMsg = progress.error || "Translation failed";
