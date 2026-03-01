@@ -2908,6 +2908,45 @@ async def append_content_blocks(
     return {"message": f"{len(new_blocks)} block(s) added", "total_blocks": len(chapter.get("content_blocks", [])) + len(new_blocks)}
 
 
+class InsertBlockRequest(BaseModel):
+    block: ContentBlock
+    position: int  # Insert AFTER this index (-1 for beginning)
+
+
+@api_router.post("/stories/{story_id}/chapters/{chapter_id}/insert-block")
+async def insert_content_block(
+    story_id: str, chapter_id: str,
+    data: InsertBlockRequest,
+    user=Depends(get_current_user)
+):
+    """Insert a content block at a specific position in the chapter"""
+    story = await db.stories.find_one({"id": story_id, "user_id": user["id"]})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    chapter = await db.chapters.find_one({"id": chapter_id, "story_id": story_id}, {"_id": 0})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    
+    blocks = chapter.get("content_blocks", [])
+    new_block = data.block.dict()
+    insert_index = data.position + 1  # Insert AFTER the specified position
+    
+    if insert_index < 0:
+        insert_index = 0
+    elif insert_index > len(blocks):
+        insert_index = len(blocks)
+    
+    blocks.insert(insert_index, new_block)
+    
+    now = datetime.now(timezone.utc).isoformat()
+    await db.chapters.update_one(
+        {"id": chapter_id},
+        {"$set": {"content_blocks": blocks, "updated_at": now}}
+    )
+    await db.stories.update_one({"id": story_id}, {"$set": {"updated_at": now}})
+    return {"message": "Block inserted", "position": insert_index, "total_blocks": len(blocks)}
+
+
 @api_router.get("/stories/{story_id}/preview-pdf")
 async def story_preview_pdf(story_id: str, chapter_id: str = None, token: Optional[str] = None, credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
     """Generate a readable PDF preview of the story or a specific chapter (supports Unicode/Cyrillic)"""
