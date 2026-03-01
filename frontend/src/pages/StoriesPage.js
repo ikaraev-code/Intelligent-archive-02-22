@@ -305,26 +305,15 @@ function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete
       );
     }
 
-    // Text block: click to edit, right-click/ctrl+click to select for insertion
-    const handleContextMenu = (e) => {
-      e.preventDefault();
-      if (onSelect) onSelect(index);
-    };
-
+    // Text block: click to edit
     return (
       <div 
-        className={`relative py-1.5 px-2 -mx-2 rounded transition-colors cursor-pointer ${isSelected ? 'bg-primary/20 ring-2 ring-primary' : 'hover:bg-muted/30'}`}
+        className="relative py-1.5 px-2 -mx-2 rounded hover:bg-muted/30 transition-colors cursor-pointer"
         data-testid={`content-block-${index}`}
         onClick={handleTextClick}
-        onContextMenu={handleContextMenu}
-        title="Click to edit, right-click to select for media insertion"
+        title="Click to edit"
       >
         <p className="text-sm whitespace-pre-wrap leading-relaxed">{block.content}</p>
-        {isSelected && (
-          <div className="absolute -right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full">
-            Insert here
-          </div>
-        )}
       </div>
     );
   }
