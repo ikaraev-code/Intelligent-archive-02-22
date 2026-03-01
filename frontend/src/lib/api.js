@@ -109,6 +109,8 @@ export const storiesAPI = {
     api.delete(`/stories/${storyId}/chapters/${chapterId}/blocks/${blockIndex}`),
   appendContentBlock: (storyId, chapterId, block) =>
     api.post(`/stories/${storyId}/chapters/${chapterId}/append-blocks`, { blocks: [block] }),
+  insertBlock: (storyId, chapterId, block, position) =>
+    api.post(`/stories/${storyId}/chapters/${chapterId}/insert-block`, { block, position }),
   getLanguages: () => api.get("/stories/languages"),
   translate: (storyId, targetLanguage) =>
     api.post(`/stories/${storyId}/translate`, { target_language: targetLanguage }),
