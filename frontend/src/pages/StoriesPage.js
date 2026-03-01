@@ -1211,12 +1211,14 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       </div>
 
       {/* Import from Library Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+      <Dialog open={showImportDialog} onOpenChange={(open) => { setShowImportDialog(open); if (!open) setInsertAfterBlockIndex(-1); }}>
         <DialogContent className="max-w-md" data-testid="import-dialog">
           <DialogHeader>
             <DialogTitle>Import from Library</DialogTitle>
             <DialogDescription>
-              Select a file to import. Text files will be added to chat, media files will be inserted directly.
+              {insertAfterBlockIndex >= 0 
+                ? `Media will be inserted after block ${insertAfterBlockIndex + 1}. Text files go to chat.`
+                : "Select a file. Text files → chat, media → end of chapter. Right-click a text block first to insert at a specific position."}
             </DialogDescription>
           </DialogHeader>
           {loadingFiles ? (
