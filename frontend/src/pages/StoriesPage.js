@@ -635,7 +635,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     const isAudio = mimeType.startsWith("audio/");
     
     if (isImage || isVideo || isAudio) {
-      // Insert as media block
+      // Insert as media block at end of chapter
       try {
         const mediaType = isImage ? "image" : isVideo ? "video" : "audio";
         const mediaBlock = {
@@ -644,17 +644,9 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           caption: file.original_filename
         };
         
-        // Insert at selected position or append to end
-        if (insertAfterBlockIndex >= 0) {
-          await storiesAPI.insertBlock(story.id, selectedChapter.id, mediaBlock, insertAfterBlockIndex);
-          toast.success(`Inserted "${file.original_filename}" after selected block`);
-        } else {
-          await storiesAPI.appendContentBlock(story.id, selectedChapter.id, mediaBlock);
-          toast.success(`Added "${file.original_filename}" to end of chapter`);
-        }
-        
+        await storiesAPI.appendContentBlock(story.id, selectedChapter.id, mediaBlock);
+        toast.success(`Added "${file.original_filename}" to chapter`);
         setShowImportDialog(false);
-        setInsertAfterBlockIndex(-1); // Reset insertion point
         loadStory(); // Refresh to show new media
       } catch (err) {
         toast.error(err.response?.data?.detail || "Failed to add media");
@@ -664,7 +656,6 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
     
     // For text files, import text content
     try {
-      // Get the file's text content
       const fileDetail = await filesAPI.getById(fileId);
       const textContent = fileDetail.data.content_text;
       
@@ -673,11 +664,9 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
         return;
       }
       
-      // Store the imported text to be used in the chat
       setImportedText(textContent);
-      toast.success(`Imported "${file.original_filename}" - text added to chat input. Use AI to process it.`);
+      toast.success(`Imported "${file.original_filename}" - text added to chat input.`);
       setShowImportDialog(false);
-      setInsertAfterBlockIndex(-1); // Reset insertion point
     } catch (err) {
       toast.error(err.response?.data?.detail || "Import failed");
     }
