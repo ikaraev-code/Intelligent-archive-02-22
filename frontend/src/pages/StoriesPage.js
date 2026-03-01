@@ -1179,6 +1179,8 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
                         onUpdate={loadStory}
                         onDelete={loadStory}
                         isLast={i === (selectedChapter.content_blocks || []).length - 1}
+                        isSelected={insertAfterBlockIndex === i}
+                        onSelect={(idx) => setInsertAfterBlockIndex(idx)}
                       />
                     ))}
                   </div>
