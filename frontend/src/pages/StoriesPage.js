@@ -233,7 +233,7 @@ function ChapterChat({ story, chapter, onContentUpdate, importedText, onImported
 }
 
 // ========== Content Block Viewer/Editor ==========
-function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete, isLast, isSelected, onSelect }) {
+function ContentBlockView({ block, index, storyId, chapterId, onUpdate, onDelete, isLast }) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(block.content || "");
   const [clickRatio, setClickRatio] = useState(0); // Ratio of where user clicked (0-1)
