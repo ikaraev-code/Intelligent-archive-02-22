@@ -645,10 +645,17 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
           caption: file.original_filename
         };
         
-        // Use append-blocks endpoint to add the media
-        await storiesAPI.appendContentBlock(story.id, selectedChapter.id, mediaBlock);
-        toast.success(`Added "${file.original_filename}" to chapter`);
+        // Insert at selected position or append to end
+        if (insertAfterBlockIndex >= 0) {
+          await storiesAPI.insertBlock(story.id, selectedChapter.id, mediaBlock, insertAfterBlockIndex);
+          toast.success(`Inserted "${file.original_filename}" after selected block`);
+        } else {
+          await storiesAPI.appendContentBlock(story.id, selectedChapter.id, mediaBlock);
+          toast.success(`Added "${file.original_filename}" to end of chapter`);
+        }
+        
         setShowImportDialog(false);
+        setInsertAfterBlockIndex(-1); // Reset insertion point
         loadStory(); // Refresh to show new media
       } catch (err) {
         toast.error(err.response?.data?.detail || "Failed to add media");
@@ -671,6 +678,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
       setImportedText(textContent);
       toast.success(`Imported "${file.original_filename}" - text added to chat input. Use AI to process it.`);
       setShowImportDialog(false);
+      setInsertAfterBlockIndex(-1); // Reset insertion point
     } catch (err) {
       toast.error(err.response?.data?.detail || "Import failed");
     }
