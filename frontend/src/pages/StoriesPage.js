@@ -431,6 +431,7 @@ function StoryDetailView({ story: initialStory, onBack, onTranslateSuccess }) {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [libraryFiles, setLibraryFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [insertAfterBlockIndex, setInsertAfterBlockIndex] = useState(-1); // -1 means append to end
   const mediaInputRef = useRef(null);
   const chapterNameInputRef = useRef(null);
   
